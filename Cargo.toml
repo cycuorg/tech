@@ -1,0 +1,34 @@
+[package]
+name = "cms-rust"
+version = "1.4.3"
+edition = "2021"
+authors = ["Rust CMS Rewrite"]
+description = "Complete Rust rewrite of mdecycu/cms (Flask-based CMS from cmsimde)"
+license = "AGPL-3.0"
+repository = "https://github.com/mdecycu/cms"
+
+[dependencies]
+axum = { version = "0.7", features = ["multipart", "macros"] }
+axum-server = { version = "0.7", features = ["tls-rustls"] }
+tokio = { version = "1", features = ["full"] }
+tower = "0.4"
+tower-http = { version = "0.5", features = ["fs", "cors", "trace"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+regex = "1"
+html-escape = "0.2"
+sha2 = "0.10"
+hex = "0.4"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+mime_guess = "2"
+bytes = "1"
+futures = "0.3"
+rcgen = "0.13"
+rustls = "0.23"
+
+[profile.release]
+lto = true
+codegen-units = 1
+panic = "abort"
+opt-level = 3
