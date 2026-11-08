@@ -3,6 +3,9 @@
 
 
 
+
+
+
 <p>all: <a href="https://cycu.org/all">https://cycu.org/all</a> (包羅萬象)</p>
 <p>health: <a href="https://cycu.org/health">https://cycu.org/health</a> (健康)</p>
 <p>recipes: <a href="https://cycu.org/recipes">https://cycu.org/recipes</a> (食譜)</p>
@@ -12,11 +15,220 @@
 <p>learning: <a href="https://cycu.org/learning">https://cycu.org/learning</a> (學習)</p>
 <p>tech: <a href="https://cycu.org/tech">https://cycu.org/tech</a> (科技)</p>
 <p>art: <a href="https://cycu.org/art">https://cycu.org/art</a> (藝術)</p>
+<h1>啟動</h1>
+<p>portable_rust 啟動 startup.bat:</p>
+<pre class="brush:js;auto-links:false;toolbar:false" contenteditable="false">@echo off
+chcp 65001 &gt;nul
+setlocal ENABLEEXTENSIONS
+
+REM ==================================================
+REM  Portable System Bootstrap (Rust)
+REM ==================================================
+
+REM === 虛擬磁碟代號（請勿加反斜線）===
+set DRIVE=R:
+
+REM === for Python312
+set PYTHONPATH=%DRIVE%\Python312\DLLs;%DRIVE%\Python312\Lib;%DRIVE%\Python312\Lib\site-packages;
+REM 將系統 Python 程式的 io 設為 utf-8
+set PYTHONIOENCODING="utf-8"
+
+REM === 取得 batch 所在目錄（結尾含 \）===
+set ROOT=%~dp0
+set DATA=%ROOT%data
+
+REM === 若已存在則先解除（避免錯誤）===
+subst %DRIVE% /D &gt;nul 2&gt;&amp;1
+
+REM === 建立虛擬磁碟 ===
+subst %DRIVE% "%DATA%"
+
+REM ==================================================
+REM  Home / User 環境（避免污染系統）
+REM ==================================================
+set HOMEDRIVE=%DRIVE%
+set HOMEPATH=\home
+set USERPROFILE=%DRIVE%\home
+set HOME=%DRIVE%\home
+
+REM ==================================================
+REM  Git / Putty
+REM ==================================================
+set GIT_SSH=%DRIVE%\PuTTY\plink.exe
+
+REM ==================================================
+REM  Rust (Portable, GNU)
+REM ==================================================
+set RUSTUP_HOME=%DRIVE%\.rustup
+REM et CARGO_HOME=%DRIVE%\.cargo
+REM cargo cache need NTFS disk
+set CARGO_HOME=C:\cargo
+set SCITE_HOME=%DRIVE%\wscite
+set RUSTUP_NO_UPDATE_CHECK=1
+
+REM === 強制使用 GNU toolchain ===
+set RUSTUP_TOOLCHAIN=stable-x86_64-pc-windows-gnu
+
+REM === MinGW 編譯器指定（非常重要）===
+set CC=%DRIVE%\msys64\ucrt64\bin\gcc.exe
+set CXX=%DRIVE%\msys64\ucrt64\bin\g++.exe
+set AR=%DRIVE%\msys64\ucrt64\bin\ar.exe
+
+REM === Rust linker 指定 ===
+set RUSTFLAGS=-C linker=%DRIVE%\msys64\ucrt64\bin\gcc.exe
+
+REM === unveil-rs ===
+set MSYS2=%DRIVE%\msys64
+set CC=%DRIVE%\msys64\ucrt64\bin\gcc.exe
+set CXX=%DRIVE%\msys64\ucrt64\bin\g++.exe
+set CC_x86_64_pc_windows_gnu=%DRIVE%\msys64\ucrt64\bin\gcc.exe
+set CXX_x86_64_pc_windows_gnu=%DRIVE%\msys64\ucrt64\bin\g++.exe
+
+REM ==================================================
+REM  PATH 組合
+REM ==================================================
+set PATH=%DRIVE%\msys64\ucrt64\bin^
+;%DRIVE%\msys64\usr\bin^
+;%CARGO_HOME%\bin^
+;%SCITE_HOME%^
+;%DRIVE%\portablegit\bin^
+;%DRIVE%\Zed
+;%PATH%
+
+REM 以可攜系統中的 Python312 為主
+set PATH=%DRIVE%\Python312;%DRIVE%\Python312\Scripts;%PATH%;%DRIVE%;%DRIVE%\.rustup\toolchains\stable-x86_64-pc-windows-gnu\bin;
+
+REM ==================================================
+REM  顯示資訊
+REM ==================================================
+title Portable Rust GNU Environment (%DRIVE%)
+
+echo ======================================
+echo  Portable Environment Ready
+echo  Mounted Drive : %DRIVE%
+echo  Data Path     : %DATA%
+echo  Rust Toolchain: %RUSTUP_TOOLCHAIN%
+echo  MinGW GCC     : %CC%
+echo  Type STOP then close window to exit
+echo ======================================
+echo.
+
+REM ==================================================
+REM  啟動工具
+REM ==================================================
+if exist "%SCITE_HOME%\SciTE.exe" (
+    start "" /MIN "%SCITE_HOME%\SciTE.exe"
+    start "" /MIN "%SCITE_HOME%\SciTE.exe"
+)
+
+REM === 切換到虛擬磁碟 ===
+%DRIVE%
+
+REM ==================================================
+REM  保持命令列
+REM ==================================================
+start /min "CMD-1" cmd /k
+start /min  "CMD-2" cmd /k
+start /min" CMD-3" cmd /k
+start /min "CMD-4" cmd /k
+
+REM　啟動 run-rustcms.exe 之後用 firefox 開啟動態網頁編輯
+start /min "rustcms" cmd /k "cd /d %DRIVE%\projects\rustcms &amp;&amp; cms.exe"
+timeout /t 3 /nobreak &gt;nul
+start "" firefox -new-tab https://localhost:5000
+
+REM　啟動 all
+start /min "all" cmd /k "cd /d %DRIVE%\projects\cycuorg\all &amp;&amp; cms.exe"
+timeout /t 3 /nobreak &gt;nul
+start "" firefox -new-tab https://localhost:5001
+
+REM　啟動 art
+start /min "art" cmd /k "cd /d %DRIVE%\projects\cycuorg\art &amp;&amp; cms.exe"
+timeout /t 3 /nobreak &gt;nul
+start "" firefox -new-tab https://localhost:5002
+
+REM　啟動 clothing
+start /min "clothing" cmd /k "cd /d %DRIVE%\projects\cycuorg\clothing &amp;&amp; cms.exe"
+timeout /t 3 /nobreak &gt;nul
+start "" firefox -new-tab https://localhost:5003
+
+REM　啟動 health
+start /min "health" cmd /k "cd /d %DRIVE%\projects\cycuorg\health &amp;&amp; cms.exe"
+timeout /t 3 /nobreak &gt;nul
+start "" firefox -new-tab https://localhost:5004
+
+REM　啟動 history
+start /min "history" cmd /k "cd /d %DRIVE%\projects\cycuorg\history &amp;&amp; cms.exe"
+timeout /t 3 /nobreak &gt;nul
+start "" firefox -new-tab https://localhost:5005
+
+REM　啟動 learning
+start /min "learning" cmd /k "cd /d %DRIVE%\projects\cycuorg\learning &amp;&amp; cms.exe"
+timeout /t 3 /nobreak &gt;nul
+start "" firefox -new-tab https://localhost:5006
+
+REM　啟動 living
+start /min "living" cmd /k "cd /d %DRIVE%\projects\cycuorg\living &amp;&amp; cms.exe"
+timeout /t 3 /nobreak &gt;nul
+start "" firefox -new-tab https://localhost:5007
+
+REM　啟動 recipes
+start /min "recipes" cmd /k "cd /d %DRIVE%\projects\cycuorg\recipes &amp;&amp; cms.exe"
+timeout /t 3 /nobreak &gt;nul
+start "" firefox -new-tab https://localhost:5008
+
+REM　啟動 tech
+start /min "tech" cmd /k "cd /d %DRIVE%\projects\cycuorg\tech &amp;&amp; cms.exe"
+timeout /t 3 /nobreak &gt;nul
+start "" firefox -new-tab https://localhost:5009
+
+REM　啟動 tourism
+start /min "tourism" cmd /k "cd /d %DRIVE%\projects\cycuorg\tourism &amp;&amp; cms.exe"
+timeout /t 3 /nobreak &gt;nul
+start "" firefox -new-tab https://localhost:5010
+
+REM start /min "SCMS" cmd /k "cd /d %DRIVE%\tmp\cmsite &amp;&amp; python cms\wsgi.py"
+REM start /min "Leo Editor" cmd /k "leo"
+Zed %DRIVE%\projects\rustcms
+
+REM start /min %DRIVE%\Zed\Zed.exe
+</pre>
+<p>關閉 stop.bat:</p>
+<pre class="brush:js;auto-links:false;toolbar:false" contenteditable="false">@echo off
+set DRIVE=R:
+
+taskkill /IM python.exe /F
+taskkill /IM pythonw.exe /F
+REM taskkill /IM adb.exe /F
+taskkill /IM scite.exe /F
+taskkill /IM ugraf.exe /F
+taskkill /IM webotsw.exe /F
+taskkill /IM solvespace.exe /F
+taskkill /IM sharex.exe /F
+taskkill /IM leo.exe /F
+taskkill /IM zed.exe /F
+taskkill /IM cms.exe /F
+
+echo Unmounting %DRIVE% ...
+subst %DRIVE% /D
+
+REM 關閉 cmd 指令視窗
+taskkill /IM cmd.exe /F
+
+echo Done.
+
+EXIT
+</pre>
+<p></p>
 <h1>代理</h1>
+
 
 <p>議題:</p>
 <p style="padding-left: 30px;">如何使用近端 AI 代理整理 CMS 資料? 給定特定類別與主題，由 AI 代理自行尋找資料，整理納入 CMS 系統且自動提交推送到 Github 後回報結果。</p>
 <h1>Git</h1>
+
+
+
 <p>議題:</p>
 <p>git 少量多次推送與集合大量資料後少批推送的差別何在? 比較推薦哪種方式進行資料維護？</p>
 <p><br></p>

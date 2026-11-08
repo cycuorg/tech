@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta property="head" content="H1">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<title>啟動</title>
+
+<link rel="stylesheet" href="./../static/chimper/fonts/icomoon/style.css">
+<link rel="stylesheet" href="./../static/chimper/css/bootstrap.min.css">
+<link rel="stylesheet" href="./../static/chimper/css/magnific-popup.css">
+<link rel="stylesheet" href="./../static/chimper/css/jquery-ui.css">
+<link rel="stylesheet" href="./../static/chimper/css/owl.carousel.min.css">
+<link rel="stylesheet" href="./../static/chimper/css/owl.theme.default.min.css">
+<link rel="stylesheet" href="./../static/chimper/css/bootstrap-datepicker.css">
+<link rel="stylesheet" href="./../static/chimper/fonts/flaticon/font/flaticon.css">
+<link rel="stylesheet" href="./../static/chimper/css/aos.css">
+<link rel="stylesheet" href="./../static/chimper/css/style.css">
+<link rel="shortcut icon" href="./../static/favicons.png">
+
+<style type="text/css">
+.site-section { background-color: #FFFF; padding: 40px 40px; }
+body > div > div.dropdown.open { display: block; }
+img.add_border { border: 3px solid blue; }
+
+.page-navigation {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+    gap: 20px;
+    margin: 24px 0;
+    padding: 12px 0;
+    border-top: 1px solid #ddd;
+    border-bottom: 1px solid #ddd;
+}
+
+.page-navigation .previous {
+    flex: 1 1 50%;
+    min-width: 0;
+    margin-right: auto;
+    text-align: left;
+}
+
+.page-navigation .next {
+    flex: 1 1 50%;
+    min-width: 0;
+    margin-left: auto;
+    text-align: right;
+}
+
+.page-navigation a {
+    display: inline-block;
+    text-decoration: none;
+    overflow-wrap: anywhere;
+}
+
+.page-navigation a:hover {
+    text-decoration: underline;
+}
+</style>
+
+<script src="./../static/chimper/js/jquery-3.3.1.min.js"></script>
+<link rel="stylesheet" href="./../static/tipuesearch/css/normalize.min.css">
+<script src="./../static/tipuesearch/tipuesearch_set.js"></script>
+<script src="tipuesearch_content.js"></script>
+<link rel="stylesheet" href="./../static/tipuesearch/css/tipuesearch.css">
+<script src="./../static/tipuesearch/tipuesearch.js"></script>
+
+<script>
+function doSearch() {
+    if (window.jQuery && jQuery.fn.tipuesearch) {
+        jQuery('#tipue_search_input').tipuesearch({
+            newWindow: true,
+            minimumLength: 2,
+            wholeWords: false
+        });
+    }
+}
+
+if (window.jQuery) {
+    jQuery(document).ready(doSearch);
+}
+</script>
+
+<script type="text/javascript" src="./../static/syntaxhighlighter/shCore.js"></script>
+<script type="text/javascript" src="./../static/syntaxhighlighter/shBrushBash.js"></script>
+<script type="text/javascript" src="./../static/syntaxhighlighter/shBrushDiff.js"></script>
+<script type="text/javascript" src="./../static/syntaxhighlighter/shBrushJScript.js"></script>
+<script type="text/javascript" src="./../static/syntaxhighlighter/shBrushJava.js"></script>
+<script type="text/javascript" src="./../static/syntaxhighlighter/shBrushPython.js"></script>
+<script type="text/javascript" src="./../static/syntaxhighlighter/shBrushSql.js"></script>
+<script type="text/javascript" src="./../static/syntaxhighlighter/shBrushHaxe.js"></script>
+<script type="text/javascript" src="./../static/syntaxhighlighter/shBrushXml.js"></script>
+<script type="text/javascript" src="./../static/syntaxhighlighter/shBrushPhp.js"></script>
+<script type="text/javascript" src="./../static/syntaxhighlighter/shBrushPowerShell.js"></script>
+<script type="text/javascript" src="./../static/syntaxhighlighter/shBrushLua.js"></script>
+<script type="text/javascript" src="./../static/syntaxhighlighter/shBrushMojo.js"></script>
+<script type="text/javascript" src="./../static/syntaxhighlighter/shBrushWbt.js"></script>
+<script type="text/javascript" src="./../static/syntaxhighlighter/shBrushCpp.js"></script>
+<script type="text/javascript" src="./../static/syntaxhighlighter/shBrushCss.js"></script>
+<script type="text/javascript" src="./../static/syntaxhighlighter/shBrushCSharp.js"></script>
+<script type="text/javascript" src="./../static/syntaxhighlighter/shBrushDart.js"></script>
+<script type="text/javascript" src="./../static/syntaxhighlighter/shBrushRust.js"></script>
+<link type="text/css" rel="stylesheet" href="./../static/syntaxhighlighter/css/shCoreDefault.css">
+<style>
+pre, pre code, .syntaxhighlighter .line, .syntaxhighlighter table td.code .line {
+  white-space: pre !important; word-wrap: normal !important; word-break: normal !important;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+<div class="site-wrap">
+
+<div class="site-mobile-menu">
+  <div class="site-mobile-menu-header">
+    <div class="site-mobile-menu-close mt-3">
+      <span class="icon-close2 js-menu-toggle"></span>
+    </div>
+  </div>
+  <div class="site-mobile-menu-body"></div>
+</div>
+
+<header class="site-navbar py-4 bg-white" role="banner">
+  <div class="container">
+    <div class="row align-items-center">
+      <h1>Tech</h1>
+
+      <div class="pl-4">
+        <form action="#" onsubmit="return false;">
+          <input type="text"
+                 placeholder="Search"
+                 name="q"
+                 id="tipue_search_input"
+                 pattern=".{2,}"
+                 title="At least 2 characters">
+        </form>
+      </div>
+
+      <div class="col-12 col-md-10 d-none d-xl-block">
+        <nav class="site-navigation position-relative text-right" role="navigation">
+          <ul class="site-menu js-clone-nav mr-auto d-none d-lg-block">
+<li class="active has-children">
+<a href="index.html">Home</a>
+<ul class="dropdown">
+<li><a href="sitemap.html">SMap</a></li>
+</ul>
+</li>
+<li><a href="About.html">About</a></li>
+<li><a href="啟動.html">啟動</a></li>
+<li><a href="代理.html">代理</a></li>
+<li><a href="Git.html">Git</a></li>
+</ul>
+
+        </nav>
+      </div>
+
+      <div class="d-inline-block d-xl-none ml-md-0 mr-auto py-3"
+           style="position: relative; top: 3px;">
+        <a href="#" class="site-menu-toggle js-menu-toggle text-black">
+          <span class="icon-menu h3"></span>
+        </a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div id="tipue_search_content">
+<h1>啟動</h1>
+<nav class="page-navigation" aria-label="Page navigation">
+<div class="previous">&lt;&lt; <a href="About.html">Previous: About</a></div>
+<div class="next"><a href="代理.html">Next: 代理</a> &gt;&gt;</div>
+</nav>
+
+<p>portable_rust 啟動 startup.bat:</p>
+<pre class="brush:js;auto-links:false;toolbar:false" contenteditable="false">@echo off
+chcp 65001 &gt;nul
+setlocal ENABLEEXTENSIONS
+
+REM ==================================================
+REM  Portable System Bootstrap (Rust)
+REM ==================================================
+
+REM === 虛擬磁碟代號（請勿加反斜線）===
+set DRIVE=R:
+
+REM === for Python312
+set PYTHONPATH=%DRIVE%\Python312\DLLs;%DRIVE%\Python312\Lib;%DRIVE%\Python312\Lib\site-packages;
+REM 將系統 Python 程式的 io 設為 utf-8
+set PYTHONIOENCODING="utf-8"
+
+REM === 取得 batch 所在目錄（結尾含 \）===
+set ROOT=%~dp0
+set DATA=%ROOT%data
+
+REM === 若已存在則先解除（避免錯誤）===
+subst %DRIVE% /D &gt;nul 2&gt;&amp;1
+
+REM === 建立虛擬磁碟 ===
+subst %DRIVE% "%DATA%"
+
+REM ==================================================
+REM  Home / User 環境（避免污染系統）
+REM ==================================================
+set HOMEDRIVE=%DRIVE%
+set HOMEPATH=\home
+set USERPROFILE=%DRIVE%\home
+set HOME=%DRIVE%\home
+
+REM ==================================================
+REM  Git / Putty
+REM ==================================================
+set GIT_SSH=%DRIVE%\PuTTY\plink.exe
+
+REM ==================================================
+REM  Rust (Portable, GNU)
+REM ==================================================
+set RUSTUP_HOME=%DRIVE%\.rustup
+REM et CARGO_HOME=%DRIVE%\.cargo
+REM cargo cache need NTFS disk
+set CARGO_HOME=C:\cargo
+set SCITE_HOME=%DRIVE%\wscite
+set RUSTUP_NO_UPDATE_CHECK=1
+
+REM === 強制使用 GNU toolchain ===
+set RUSTUP_TOOLCHAIN=stable-x86_64-pc-windows-gnu
+
+REM === MinGW 編譯器指定（非常重要）===
+set CC=%DRIVE%\msys64\ucrt64\bin\gcc.exe
+set CXX=%DRIVE%\msys64\ucrt64\bin\g++.exe
+set AR=%DRIVE%\msys64\ucrt64\bin\ar.exe
+
+REM === Rust linker 指定 ===
+set RUSTFLAGS=-C linker=%DRIVE%\msys64\ucrt64\bin\gcc.exe
+
+REM === unveil-rs ===
+set MSYS2=%DRIVE%\msys64
+set CC=%DRIVE%\msys64\ucrt64\bin\gcc.exe
+set CXX=%DRIVE%\msys64\ucrt64\bin\g++.exe
+set CC_x86_64_pc_windows_gnu=%DRIVE%\msys64\ucrt64\bin\gcc.exe
+set CXX_x86_64_pc_windows_gnu=%DRIVE%\msys64\ucrt64\bin\g++.exe
+
+REM ==================================================
+REM  PATH 組合
+REM ==================================================
+set PATH=%DRIVE%\msys64\ucrt64\bin^
+;%DRIVE%\msys64\usr\bin^
+;%CARGO_HOME%\bin^
+;%SCITE_HOME%^
+;%DRIVE%\portablegit\bin^
+;%DRIVE%\Zed
+;%PATH%
+
+REM 以可攜系統中的 Python312 為主
+set PATH=%DRIVE%\Python312;%DRIVE%\Python312\Scripts;%PATH%;%DRIVE%;%DRIVE%\.rustup\toolchains\stable-x86_64-pc-windows-gnu\bin;
+
+REM ==================================================
+REM  顯示資訊
+REM ==================================================
+title Portable Rust GNU Environment (%DRIVE%)
+
+echo ======================================
+echo  Portable Environment Ready
+echo  Mounted Drive : %DRIVE%
+echo  Data Path     : %DATA%
+echo  Rust Toolchain: %RUSTUP_TOOLCHAIN%
+echo  MinGW GCC     : %CC%
+echo  Type STOP then close window to exit
+echo ======================================
+echo.
+
+REM ==================================================
+REM  啟動工具
+REM ==================================================
+if exist "%SCITE_HOME%\SciTE.exe" (
+    start "" /MIN "%SCITE_HOME%\SciTE.exe"
+    start "" /MIN "%SCITE_HOME%\SciTE.exe"
+)
+
+REM === 切換到虛擬磁碟 ===
+%DRIVE%
+
+REM ==================================================
+REM  保持命令列
+REM ==================================================
+start /min "CMD-1" cmd /k
+start /min  "CMD-2" cmd /k
+start /min" CMD-3" cmd /k
+start /min "CMD-4" cmd /k
+
+REM　啟動 run-rustcms.exe 之後用 firefox 開啟動態網頁編輯
+start /min "rustcms" cmd /k "cd /d %DRIVE%\projects\rustcms &amp;&amp; cms.exe"
+timeout /t 3 /nobreak &gt;nul
+start "" firefox -new-tab https://localhost:5000
+
+REM　啟動 all
+start /min "all" cmd /k "cd /d %DRIVE%\projects\cycuorg\all &amp;&amp; cms.exe"
+timeout /t 3 /nobreak &gt;nul
+start "" firefox -new-tab https://localhost:5001
+
+REM　啟動 art
+start /min "art" cmd /k "cd /d %DRIVE%\projects\cycuorg\art &amp;&amp; cms.exe"
+timeout /t 3 /nobreak &gt;nul
+start "" firefox -new-tab https://localhost:5002
+
+REM　啟動 clothing
+start /min "clothing" cmd /k "cd /d %DRIVE%\projects\cycuorg\clothing &amp;&amp; cms.exe"
+timeout /t 3 /nobreak &gt;nul
+start "" firefox -new-tab https://localhost:5003
+
+REM　啟動 health
+start /min "health" cmd /k "cd /d %DRIVE%\projects\cycuorg\health &amp;&amp; cms.exe"
+timeout /t 3 /nobreak &gt;nul
+start "" firefox -new-tab https://localhost:5004
+
+REM　啟動 history
+start /min "history" cmd /k "cd /d %DRIVE%\projects\cycuorg\history &amp;&amp; cms.exe"
+timeout /t 3 /nobreak &gt;nul
+start "" firefox -new-tab https://localhost:5005
+
+REM　啟動 learning
+start /min "learning" cmd /k "cd /d %DRIVE%\projects\cycuorg\learning &amp;&amp; cms.exe"
+timeout /t 3 /nobreak &gt;nul
+start "" firefox -new-tab https://localhost:5006
+
+REM　啟動 living
+start /min "living" cmd /k "cd /d %DRIVE%\projects\cycuorg\living &amp;&amp; cms.exe"
+timeout /t 3 /nobreak &gt;nul
+start "" firefox -new-tab https://localhost:5007
+
+REM　啟動 recipes
+start /min "recipes" cmd /k "cd /d %DRIVE%\projects\cycuorg\recipes &amp;&amp; cms.exe"
+timeout /t 3 /nobreak &gt;nul
+start "" firefox -new-tab https://localhost:5008
+
+REM　啟動 tech
+start /min "tech" cmd /k "cd /d %DRIVE%\projects\cycuorg\tech &amp;&amp; cms.exe"
+timeout /t 3 /nobreak &gt;nul
+start "" firefox -new-tab https://localhost:5009
+
+REM　啟動 tourism
+start /min "tourism" cmd /k "cd /d %DRIVE%\projects\cycuorg\tourism &amp;&amp; cms.exe"
+timeout /t 3 /nobreak &gt;nul
+start "" firefox -new-tab https://localhost:5010
+
+REM start /min "SCMS" cmd /k "cd /d %DRIVE%\tmp\cmsite &amp;&amp; python cms\wsgi.py"
+REM start /min "Leo Editor" cmd /k "leo"
+Zed %DRIVE%\projects\rustcms
+
+REM start /min %DRIVE%\Zed\Zed.exe
+</pre>
+<p>關閉 stop.bat:</p>
+<pre class="brush:js;auto-links:false;toolbar:false" contenteditable="false">@echo off
+set DRIVE=R:
+
+taskkill /IM python.exe /F
+taskkill /IM pythonw.exe /F
+REM taskkill /IM adb.exe /F
+taskkill /IM scite.exe /F
+taskkill /IM ugraf.exe /F
+taskkill /IM webotsw.exe /F
+taskkill /IM solvespace.exe /F
+taskkill /IM sharex.exe /F
+taskkill /IM leo.exe /F
+taskkill /IM zed.exe /F
+taskkill /IM cms.exe /F
+
+echo Unmounting %DRIVE% ...
+subst %DRIVE% /D
+
+REM 關閉 cmd 指令視窗
+taskkill /IM cmd.exe /F
+
+echo Done.
+
+EXIT
+</pre>
+<p></p>
+<nav class="page-navigation" aria-label="Page navigation">
+<div class="previous">&lt;&lt; <a href="About.html">Previous: About</a></div>
+<div class="next"><a href="代理.html">Next: 代理</a> &gt;&gt;</div>
+</nav>
+<script>
+(function(){
+  function restorePreNewlines(){
+    var nodes=document.querySelectorAll('pre');
+    for(var i=0;i<nodes.length;i++){
+      var pre=nodes[i], html=pre.innerHTML;
+      if(!html) continue;
+      var fixed=html.replace(/<br\s*\/?\s*(?:\s[^>]*)?>/gi,'\n').replace(/\r\n/g,'\n').replace(/\r/g,'\n');
+      if(fixed!==html) pre.innerHTML=fixed;
+    }
+  }
+  function run(){
+    restorePreNewlines();
+    if(!window.SyntaxHighlighter) return;
+    try{
+      if(SyntaxHighlighter.config){ SyntaxHighlighter.config.bloggerMode=true; SyntaxHighlighter.config.stripBrs=false; }
+      if(typeof SyntaxHighlighter.all==='function') SyntaxHighlighter.all();
+    }catch(e){}
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',run,{once:true});
+  else run();
+})();
+</script>
+</div><!-- /tipue_search_content -->
+
+<div class="container">
+  <div class="row pt-3 mx-auto">
+    <p>
+      Copyright &copy;<script>document.write(new Date().getFullYear());</script>
+      All rights reserved |
+      <i class="icon-heart" aria-hidden="true"></i>
+      by <a href="https://colorlib.com" target="_blank">Colorlib</a>
+    </p>
+  </div>
+</div>
+
+</div><!-- /site-wrap -->
+
+<script src="./../static/chimper/js/jquery-migrate-3.0.1.min.js"></script>
+<script src="./../static/chimper/js/jquery-ui.js"></script>
+<script src="./../static/chimper/js/popper.min.js"></script>
+<script src="./../static/chimper/js/bootstrap.min.js"></script>
+<script src="./../static/chimper/js/owl.carousel.min.js"></script>
+<script src="./../static/chimper/js/jquery.stellar.min.js"></script>
+<script src="./../static/chimper/js/jquery.countdown.min.js"></script>
+<script src="./../static/chimper/js/jquery.magnific-popup.min.js"></script>
+<script src="./../static/chimper/js/bootstrap-datepicker.min.js"></script>
+<script src="./../static/chimper/js/aos.js"></script>
+<script src="./../static/chimper/js/main.js"></script>
+</body>
+</html>

@@ -1,15 +1,36 @@
+
 mod auth;
 mod content;
 mod routes;
 mod templates;
 
-use std::net::SocketAddr;
-use std::path::PathBuf;
+use std::collections::BTreeSet;
+use std::net::{IpAddr, SocketAddr};
+use std::path::{Path, PathBuf};
 
 use axum_server::tls_rustls::RustlsConfig;
-use rcgen::{CertificateParams, DistinguishedName, DnType, KeyPair, SanType};
+
+use rcgen::{
+    BasicConstraints,
+    CertificateParams,
+    DistinguishedName,
+    DnType,
+    ExtendedKeyUsagePurpose,
+    IsCa,
+    Issuer,
+    KeyPair,
+    KeyUsagePurpose,
+    SanType,
+};
+
+use time::{Duration, OffsetDateTime};
+
 use tower_http::cors::CorsLayer;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+
+use tracing_subscriber::{
+    layer::SubscriberExt,
+    util::SubscriberInitExt,
+};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -19,143 +40,528 @@ pub struct AppState {
     pub content_path: PathBuf,
 }
 
-/// 從 config/setup.ini 讀取 ip 與 port。
-/// 支援簡單格式：
-///   ip = "127.0.0.1"
-///   port = 5000
-/// 若檔案不存在或解析失敗，回傳預設值。
-fn load_setup(base_dir: &std::path::Path) -> (String, u16) {
+// =====================================================
+// 1. Read setup.ini
+// =====================================================
+
+fn load_setup(
+    base_dir: &Path,
+) -> (String, u16, Vec<String>) {
     let path = base_dir.join("config").join("setup.ini");
+
     let mut ip = "127.0.0.1".to_string();
     let mut port: u16 = 5000;
+
+    let mut san_list = vec![
+        "localhost".to_string(),
+        "127.0.0.1".to_string(),
+    ];
 
     if let Ok(content) = std::fs::read_to_string(&path) {
         for line in content.lines() {
             let line = line.trim();
-            if line.is_empty() || line.starts_with('#') || line.starts_with(';') {
+
+            if line.is_empty()
+                || line.starts_with('#')
+                || line.starts_with(';')
+            {
                 continue;
             }
+
             if let Some((key, value)) = line.split_once('=') {
                 let key = key.trim().to_lowercase();
-                let value = value.trim().trim_matches('"').trim_matches('\'').trim();
+
+                let value = value
+                    .trim()
+                    .trim_matches('"')
+                    .trim_matches('\'')
+                    .trim();
+
                 match key.as_str() {
-                    "ip" => {
-                        if !value.is_empty() {
-                            ip = value.to_string();
-                        }
+                    "ip" if !value.is_empty() => {
+                        ip = value.to_string();
                     }
+
                     "port" => {
                         if let Ok(p) = value.parse::<u16>() {
-                            port = p;
+                            if p != 0 {
+                                port = p;
+                            }
                         }
                     }
+
+                    "san" => {
+                        san_list = value
+                            .split(',')
+                            .map(|s| s.trim().to_string())
+                            .filter(|s| !s.is_empty())
+                            .collect();
+                    }
+
                     _ => {}
                 }
             }
         }
-        tracing::info!(
-            "Loaded setup from {}: ip={}, port={}",
-            path.display(),
-            ip,
-            port
-        );
     } else {
-        // 若檔案不存在則寫入預設值，方便之後修改
+        std::fs::create_dir_all(
+            path.parent().unwrap()
+        ).ok();
+
         let default = r#"ip = "127.0.0.1"
 port = 5000
+san = "localhost,127.0.0.1"
 "#;
-        let _ = std::fs::write(&path, default);
-        tracing::info!(
-            "Created default {} (ip=127.0.0.1, port=5000)",
-            path.display()
-        );
+
+        std::fs::write(&path, default).ok();
+
+        tracing::info!("Created default setup.ini");
     }
 
-    // 環境變數可覆寫 ip
-    if let Ok(env_ip) = std::env::var("CMS_IP") {
-        let env_ip = env_ip.trim();
-
-        if !env_ip.is_empty() {
-            ip = env_ip.to_string();
-            tracing::info!("CMS_IP env overrides ip to {}", ip);
+    if let Ok(value) = std::env::var("CMS_IP") {
+        if !value.trim().is_empty() {
+            ip = value.trim().to_string();
         }
     }
 
-    // 環境變數仍可覆寫 port（向後相容）
-    if let Ok(env_port) = std::env::var("CMS_PORT") {
-        if let Ok(p) = env_port.parse::<u16>() {
-            port = p;
-            tracing::info!("CMS_PORT env overrides port to {}", port);
+    if let Ok(value) = std::env::var("CMS_PORT") {
+        if let Ok(p) = value.parse::<u16>() {
+            if p != 0 {
+                port = p;
+            }
         }
     }
 
-    (ip, port)
+    if let Ok(value) = std::env::var("CMS_SAN") {
+        san_list = value
+            .split(',')
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty())
+            .collect();
+    }
+
+    tracing::info!(
+        "CMS configuration: ip={}, port={}, san={:?}",
+        ip,
+        port,
+        san_list
+    );
+
+    (ip, port, san_list)
 }
 
-/// 動態產生 self-signed 憑證（含指定 IP 與 localhost 作為 SAN）
-/// 使用 rcgen 0.13 API
-fn generate_self_signed(ip: &str) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error>> {
-    let mut params = CertificateParams::default();
-    params.distinguished_name = DistinguishedName::new();
-    params
-        .distinguished_name
-        .push(DnType::CommonName, "CMS-Rust Self-Signed");
+// =====================================================
+// 2. Application root directory
+// =====================================================
 
-    let mut sans = vec![
-        SanType::DnsName("localhost".try_into()?),
-        SanType::IpAddress(std::net::IpAddr::V4(std::net::Ipv4Addr::new(127, 0, 0, 1))),
+fn get_application_root()
+    -> Result<PathBuf, Box<dyn std::error::Error>>
+{
+    let exe_path = std::env::current_exe()?;
+
+    let exe_dir = exe_path
+        .parent()
+        .ok_or("Cannot determine executable directory")?;
+
+    let app_root = exe_dir
+        .parent()
+        .ok_or("Cannot determine parent directory")?;
+
+    Ok(app_root.to_path_buf())
+}
+
+// =====================================================
+// 3. Certificate directory
+// =====================================================
+
+fn get_certificate_dir(
+    app_root: &Path,
+) -> Result<PathBuf, Box<dyn std::error::Error>> {
+
+    let cert_dir = app_root.join("certs");
+
+    std::fs::create_dir_all(&cert_dir)?;
+
+    Ok(cert_dir)
+}
+
+// =====================================================
+// 4. Private key permissions
+// =====================================================
+
+#[cfg(unix)]
+fn restrict_private_key(
+    path: &Path,
+) -> std::io::Result<()> {
+
+    use std::os::unix::fs::PermissionsExt;
+
+    std::fs::set_permissions(
+        path,
+        std::fs::Permissions::from_mode(0o600),
+    )
+}
+
+#[cfg(not(unix))]
+fn restrict_private_key(
+    _path: &Path,
+) -> std::io::Result<()> {
+    Ok(())
+}
+
+// =====================================================
+// 5. Create Root CA
+// =====================================================
+
+fn create_root_ca()
+    -> Result<(String, String), Box<dyn std::error::Error>>
+{
+    let mut params = CertificateParams::default();
+
+    params.distinguished_name = DistinguishedName::new();
+
+    params.distinguished_name.push(
+        DnType::CommonName,
+        "CMS-Rust Root CA",
+    );
+
+    params.distinguished_name.push(
+        DnType::OrganizationName,
+        "CMS-Rust",
+    );
+
+    params.distinguished_name.push(
+        DnType::CountryName,
+        "TW",
+    );
+
+    params.is_ca = IsCa::Ca(
+        BasicConstraints::Unconstrained,
+    );
+
+    params.key_usages = vec![
+        KeyUsagePurpose::KeyCertSign,
+        KeyUsagePurpose::CrlSign,
     ];
 
-    // 若綁定 IP 不是 0.0.0.0 / 127.0.0.1，額外加入
-    if ip != "0.0.0.0" && ip != "127.0.0.1" {
-        if let Ok(addr) = ip.parse::<std::net::IpAddr>() {
-            sans.push(SanType::IpAddress(addr));
+    let now = OffsetDateTime::now_utc();
+
+    params.not_before = now - Duration::days(1);
+    params.not_after = now + Duration::days(3650);
+
+    let ca_key = KeyPair::generate()?;
+
+    let ca_cert = params.self_signed(&ca_key)?;
+
+    Ok((
+        ca_cert.pem(),
+        ca_key.serialize_pem(),
+    ))
+}
+
+// =====================================================
+// 6. Load or create Root CA
+// =====================================================
+
+fn load_or_create_root_ca(
+    cert_dir: &Path,
+) -> Result<Issuer<'static, KeyPair>, Box<dyn std::error::Error>>
+{
+    let ca_cert_path = cert_dir.join("ca_cert.pem");
+    let ca_key_path = cert_dir.join("ca_key.pem");
+
+    let cert_exists = ca_cert_path.exists();
+    let key_exists = ca_key_path.exists();
+
+    let (cert_pem, key_pem) = match (cert_exists, key_exists) {
+
+        (true, true) => {
+            tracing::info!("Loading existing Root CA");
+
+            (
+                std::fs::read_to_string(&ca_cert_path)?,
+                std::fs::read_to_string(&ca_key_path)?,
+            )
+        }
+
+        (false, false) => {
+            tracing::info!("Creating new Root CA");
+
+            let (cert, key) = create_root_ca()?;
+
+            std::fs::write(&ca_cert_path, &cert)?;
+            std::fs::write(&ca_key_path, &key)?;
+
+            restrict_private_key(&ca_key_path)?;
+
+            (cert, key)
+        }
+
+        _ => {
+            return Err(
+                "Root CA certificate or private key is missing. \
+                 Restore the matching CA files before continuing."
+                    .into()
+            );
+        }
+    };
+
+    let ca_key = KeyPair::from_pem(&key_pem)?;
+
+    // Verify that the certificate and private key match.
+    let ca_cert_params =
+        CertificateParams::from_ca_cert_pem(&cert_pem)?;
+
+    let test_key = KeyPair::generate()?;
+
+    let test_cert = ca_cert_params
+        .clone()
+        .signed_by(
+            &test_key,
+            &Issuer::from_ca_cert_pem(
+                &cert_pem,
+                KeyPair::from_pem(&key_pem)?,
+            )?,
+        );
+
+    // A successful signing operation verifies that the CA
+    // private key can be used by rcgen with this CA certificate.
+    test_cert?;
+
+    // Reconstruct issuer for use by server certificate generation.
+    let issuer = Issuer::from_ca_cert_pem(
+        &cert_pem,
+        ca_key,
+    )?;
+
+    tracing::info!("Root CA loaded and signing verified");
+
+    Ok(issuer)
+}
+
+// =====================================================
+// 7. Build Subject Alternative Names
+// =====================================================
+
+fn build_server_sans(
+    bind_ip: &str,
+    configured_sans: &[String],
+) -> Result<Vec<SanType>, Box<dyn std::error::Error>> {
+
+    let mut names = BTreeSet::<String>::new();
+
+    names.insert("localhost".to_string());
+    names.insert("127.0.0.1".to_string());
+
+    if let Ok(addr) = bind_ip.parse::<IpAddr>() {
+
+        if !addr.is_unspecified() {
+            names.insert(addr.to_string());
+        }
+
+    } else {
+        names.insert(bind_ip.to_string());
+    }
+
+    for item in configured_sans {
+
+        let name = item.trim();
+
+        if name.is_empty() {
+            continue;
+        }
+
+        if let Ok(addr) = name.parse::<IpAddr>() {
+
+            if addr.is_unspecified() {
+                return Err(
+                    format!(
+                        "Unspecified IP cannot be used as SAN: {}",
+                        name
+                    ).into()
+                );
+            }
+
+            names.insert(addr.to_string());
+
+        } else {
+
+            if name.contains("://")
+                || name.contains('/')
+                || name.contains(':')
+                || name.contains('*')
+            {
+                return Err(
+                    format!("Invalid DNS SAN: {}", name).into()
+                );
+            }
+
+            names.insert(name.to_lowercase());
         }
     }
 
-    params.subject_alt_names = sans;
+    let mut sans = Vec::new();
 
-    let key_pair = KeyPair::generate()?;
-    let cert = params.self_signed(&key_pair)?;
+    for name in names {
 
-    let cert_pem = cert.pem().into_bytes();
-    let key_pem = key_pair.serialize_pem().into_bytes();
-    Ok((cert_pem, key_pem))
+        if let Ok(addr) = name.parse::<IpAddr>() {
+
+            sans.push(SanType::IpAddress(addr));
+
+        } else {
+
+            sans.push(
+                SanType::DnsName(name.try_into()?)
+            );
+        }
+    }
+
+    tracing::info!(
+        "Generated SAN entries: {:?}",
+        sans
+    );
+
+    Ok(sans)
 }
+
+// =====================================================
+// 8. Generate HTTPS Server Certificate
+// =====================================================
+
+fn generate_server_certificate(
+    bind_ip: &str,
+    configured_sans: &[String],
+    ca_issuer: &Issuer<'_, KeyPair>,
+) -> Result<(Vec<u8>, Vec<u8>), Box<dyn std::error::Error>> {
+
+    let mut params = CertificateParams::default();
+
+    params.distinguished_name = DistinguishedName::new();
+
+    params.distinguished_name.push(
+        DnType::CommonName,
+        "CMS-Rust HTTPS Server",
+    );
+
+    params.distinguished_name.push(
+        DnType::OrganizationName,
+        "CMS-Rust",
+    );
+
+    params.is_ca = IsCa::NoCa;
+
+    params.key_usages = vec![
+        KeyUsagePurpose::DigitalSignature,
+    ];
+
+    params.extended_key_usages = vec![
+        ExtendedKeyUsagePurpose::ServerAuth,
+    ];
+
+    params.use_authority_key_identifier_extension = true;
+
+    params.subject_alt_names = build_server_sans(
+        bind_ip,
+        configured_sans,
+    )?;
+
+    let now = OffsetDateTime::now_utc();
+
+    params.not_before = now - Duration::minutes(5);
+    params.not_after = now + Duration::days(90);
+
+    let server_key = KeyPair::generate()?;
+
+    let server_cert = params.signed_by(
+        &server_key,
+        ca_issuer,
+    )?;
+
+    Ok((
+        server_cert.pem().into_bytes(),
+        server_key.serialize_pem().into_bytes(),
+    ))
+}
+
+// =====================================================
+// 9. Main
+// =====================================================
 
 #[tokio::main]
 async fn main() {
+
+    // Logging
+
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "cms_rust=info,tower_http=info".into()),
+                .unwrap_or_else(
+                    |_| "cms_rust=info,tower_http=info".into(),
+                ),
         )
         .with(tracing_subscriber::fmt::layer())
         .init();
 
-    let base_dir = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("."));
-    let base_dir = if base_dir.join("config").exists() {
-        base_dir
+    // Application root
+
+    let app_root = get_application_root()
+        .expect("Cannot determine application root directory");
+
+    tracing::info!(
+        "Application root: {}",
+        app_root.display()
+    );
+
+    // Certificate directory
+
+    let cert_dir = get_certificate_dir(&app_root)
+        .expect("Cannot create certificate directory");
+
+    // CMS base directory
+
+    let current_dir = std::env::current_dir()
+        .unwrap_or_else(|_| PathBuf::from("."));
+
+    let base_dir = if current_dir.join("config").exists() {
+
+        current_dir
+
     } else if let Ok(exe) = std::env::current_exe() {
+
         let parent = exe
             .parent()
             .map(|p| p.to_path_buf())
-            .unwrap_or(base_dir.clone());
+            .unwrap_or(current_dir.clone());
+
         if parent.join("config").exists() {
             parent
         } else {
-            base_dir
+            current_dir
         }
+
     } else {
-        base_dir
+        current_dir
     };
 
-    for dir in &["config", "content", "static", "images", "downloads"] {
-        let _ = std::fs::create_dir_all(base_dir.join(dir));
+    for dir in &[
+        "config",
+        "content",
+        "static",
+        "images",
+        "downloads",
+    ] {
+        std::fs::create_dir_all(
+            base_dir.join(dir)
+        ).ok();
     }
 
-    let content_path = base_dir.join("config").join("content.htm");
+    let config_dir = base_dir.join("config");
+
+    // Initialize content
+
+    let content_path = config_dir.join("content.htm");
+
     if !content_path.exists() {
+
         let _ = std::fs::write(
             &content_path,
             r#"<h1>About</h1>
@@ -167,13 +573,22 @@ async fn main() {
 "#,
         );
     }
-    if !base_dir.join("config").join("sitetitle").exists() {
-        auth::save_sitetitle(&base_dir, "Dialog");
+
+    if !config_dir.join("sitetitle").exists() {
+        auth::save_sitetitle(
+            &base_dir,
+            "Dialog",
+        );
     }
+
     let _ = auth::load_password_hash(&base_dir);
 
-    // 讀取 setup.ini 起始設定
-    let (bind_ip, port) = load_setup(&base_dir);
+    // Setup
+
+    let (bind_ip, port, san_list) =
+        load_setup(&base_dir);
+
+    // AppState
 
     let state = AppState {
         base_dir: base_dir.clone(),
@@ -181,36 +596,118 @@ async fn main() {
         ip: bind_ip.clone(),
         port,
     };
-    let app = routes::create_router(state).layer(CorsLayer::permissive());
 
-    // 解析綁定位址
-    let ip_addr: std::net::IpAddr = bind_ip
+    let app = routes::create_router(state)
+        .layer(CorsLayer::permissive());
+
+    // Bind address
+
+    let ip_addr: IpAddr = bind_ip
         .parse()
-        .unwrap_or_else(|_| "127.0.0.1".parse().unwrap());
-    let addr = SocketAddr::from((ip_addr, port));
+        .unwrap_or_else(|_| {
+            "127.0.0.1".parse().unwrap()
+        });
 
-    // 動態產生 self-signed 憑證並以 HTTPS 啟動
-    let (cert_pem, key_pem) = match generate_self_signed(&bind_ip) {
-        Ok(v) => v,
-        Err(e) => {
-            tracing::error!("Failed to generate self-signed cert: {}", e);
-            // fallback 再試一次只用 localhost
-            generate_self_signed("127.0.0.1").expect("cert generation failed")
-        }
-    };
+    let addr = SocketAddr::from((
+        ip_addr,
+        port,
+    ));
 
-    let config = RustlsConfig::from_pem(cert_pem, key_pem)
-        .await
-        .expect("Failed to create RustlsConfig from PEM");
+    // Root CA
 
-    tracing::info!("CMS-Rust https://{} (self-signed)", addr);
+    let ca_issuer = load_or_create_root_ca(
+        &cert_dir
+    ).unwrap_or_else(|e| {
+
+        tracing::error!(
+            "Root CA initialization failed: {}",
+            e
+        );
+
+        panic!("Cannot initialize Root CA");
+    });
+
+    // Generate server certificate
+
+    let (cert_pem, key_pem) =
+        generate_server_certificate(
+            &bind_ip,
+            &san_list,
+            &ca_issuer,
+        )
+        .unwrap_or_else(|e| {
+
+            tracing::error!(
+                "Server certificate generation failed: {}",
+                e
+            );
+
+            panic!("Cannot generate HTTPS certificate");
+        });
+
+    // Save server certificate
+
+    let server_cert_path =
+        cert_dir.join("server_cert.pem");
+
+    let server_key_path =
+        cert_dir.join("server_key.pem");
+
+    std::fs::write(
+        &server_cert_path,
+        &cert_pem,
+    ).expect("Cannot save server certificate");
+
+    std::fs::write(
+        &server_key_path,
+        &key_pem,
+    ).expect("Cannot save server private key");
+
+    restrict_private_key(
+        &server_key_path
+    ).expect("Cannot restrict private key permissions");
+
+    // Rustls configuration
+
+    let config = RustlsConfig::from_pem(
+        cert_pem,
+        key_pem,
+    )
+    .await
+    .expect("Failed to create RustlsConfig");
+
+    // Start server
+
     tracing::info!(
-        "content.htm => {}",
-        base_dir.join("config").join("content.htm").display()
+        "CMS-Rust HTTPS listening on: {}",
+        addr
     );
 
-    axum_server::bind_rustls(addr, config)
-        .serve(app.into_make_service())
-        .await
-        .unwrap();
+    tracing::info!(
+        "Root CA: {}",
+        cert_dir.join("ca_cert.pem").display()
+    );
+
+    tracing::info!(
+        "Server certificate: {}",
+        server_cert_path.display()
+    );
+
+    tracing::info!(
+        "Certificate SAN: {:?}",
+        san_list
+    );
+
+    tracing::info!(
+        "CMS config: {}",
+        config_dir.display()
+    );
+
+    axum_server::bind_rustls(
+        addr,
+        config,
+    )
+    .serve(app.into_make_service())
+    .await
+    .unwrap();
 }
