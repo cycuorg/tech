@@ -5,6 +5,13 @@
 
 
 
+
+
+
+
+
+
+
 <p>all: <a href="https://cycu.org/all">https://cycu.org/all</a> (包羅萬象)</p>
 <p>health: <a href="https://cycu.org/health">https://cycu.org/health</a> (健康)</p>
 <p>recipes: <a href="https://cycu.org/recipes">https://cycu.org/recipes</a> (食譜)</p>
@@ -15,22 +22,27 @@
 <p>tech: <a href="https://cycu.org/tech">https://cycu.org/tech</a> (科技)</p>
 <p>art: <a href="https://cycu.org/art">https://cycu.org/art</a> (藝術)</p>
 <h1>啟動</h1>
+
+
+
+
+
 <p>portable_rust 啟動 startup.bat:</p>
-<pre class="brush:js;auto-links:false;toolbar:false" contenteditable="false">@echo off
+<pre class="brush:js;auto-links:false;toolbar:false" contenteditable="false">
+@echo off
 chcp 65001 &gt;nul
 setlocal ENABLEEXTENSIONS
 
 REM ==================================================
-REM  Portable System Bootstrap (Rust)
+REM Portable System Bootstrap (Rust)
 REM ==================================================
 
 REM === 虛擬磁碟代號（請勿加反斜線）===
 set DRIVE=R:
 
 REM === for Python312
-set PYTHONPATH=%DRIVE%\Python312\DLLs;%DRIVE%\Python312\Lib;%DRIVE%\Python312\Lib\site-packages;
-REM 將系統 Python 程式的 io 設為 utf-8
-set PYTHONIOENCODING="utf-8"
+set PYTHONPATH=%DRIVE%\Python312\DLLs;%DRIVE%\Python312\Lib;%DRIVE%\Python312\Lib\site-packages
+set PYTHONIOENCODING=utf-8
 
 REM === 取得 batch 所在目錄（結尾含 \）===
 set ROOT=%~dp0
@@ -43,24 +55,26 @@ REM === 建立虛擬磁碟 ===
 subst %DRIVE% "%DATA%"
 
 REM ==================================================
-REM  Home / User 環境（避免污染系統）
+REM Home / User 環境
 REM ==================================================
+
 set HOMEDRIVE=%DRIVE%
 set HOMEPATH=\home
 set USERPROFILE=%DRIVE%\home
 set HOME=%DRIVE%\home
 
 REM ==================================================
-REM  Git / Putty
+REM Git / Putty
 REM ==================================================
+
 set GIT_SSH=%DRIVE%\PuTTY\plink.exe
 
 REM ==================================================
-REM  Rust (Portable, GNU)
+REM Rust (Portable, GNU)
 REM ==================================================
+
 set RUSTUP_HOME=%DRIVE%\.rustup
-REM et CARGO_HOME=%DRIVE%\.cargo
-REM cargo cache need NTFS disk
+REM set CARGO_HOME=%DRIVE%\.cargo
 set CARGO_HOME=C:\cargo
 set SCITE_HOME=%DRIVE%\wscite
 set RUSTUP_NO_UPDATE_CHECK=1
@@ -68,7 +82,7 @@ set RUSTUP_NO_UPDATE_CHECK=1
 REM === 強制使用 GNU toolchain ===
 set RUSTUP_TOOLCHAIN=stable-x86_64-pc-windows-gnu
 
-REM === MinGW 編譯器指定（非常重要）===
+REM === MinGW 編譯器指定 ===
 set CC=%DRIVE%\msys64\ucrt64\bin\gcc.exe
 set CXX=%DRIVE%\msys64\ucrt64\bin\g++.exe
 set AR=%DRIVE%\msys64\ucrt64\bin\ar.exe
@@ -76,7 +90,10 @@ set AR=%DRIVE%\msys64\ucrt64\bin\ar.exe
 REM === Rust linker 指定 ===
 set RUSTFLAGS=-C linker=%DRIVE%\msys64\ucrt64\bin\gcc.exe
 
-REM === unveil-rs ===
+REM ==================================================
+REM MSYS2
+REM ==================================================
+
 set MSYS2=%DRIVE%\msys64
 set CC=%DRIVE%\msys64\ucrt64\bin\gcc.exe
 set CXX=%DRIVE%\msys64\ucrt64\bin\g++.exe
@@ -84,22 +101,17 @@ set CC_x86_64_pc_windows_gnu=%DRIVE%\msys64\ucrt64\bin\gcc.exe
 set CXX_x86_64_pc_windows_gnu=%DRIVE%\msys64\ucrt64\bin\g++.exe
 
 REM ==================================================
-REM  PATH 組合
+REM PATH 組合
 REM ==================================================
-set PATH=%DRIVE%\msys64\ucrt64\bin^
-;%DRIVE%\msys64\usr\bin^
-;%CARGO_HOME%\bin^
-;%SCITE_HOME%^
-;%DRIVE%\portablegit\bin^
-;%DRIVE%\Zed
-;%PATH%
 
-REM 以可攜系統中的 Python312 為主
-set PATH=%DRIVE%\Python312;%DRIVE%\Python312\Scripts;%PATH%;%DRIVE%;%DRIVE%\.rustup\toolchains\stable-x86_64-pc-windows-gnu\bin;
+set PATH=%DRIVE%\msys64\ucrt64\bin;%DRIVE%\msys64\usr\bin;%CARGO_HOME%\bin;%SCITE_HOME%;%DRIVE%\portablegit\bin;%DRIVE%\Zed;%PATH%
+
+set PATH=%DRIVE%\Python312;%DRIVE%\Python312\Scripts;%PATH%;%DRIVE%;%DRIVE%\.rustup\toolchains\stable-x86_64-pc-windows-gnu\bin
 
 REM ==================================================
-REM  顯示資訊
+REM 顯示資訊
 REM ==================================================
+
 title Portable Rust GNU Environment (%DRIVE%)
 
 echo ======================================
@@ -113,93 +125,249 @@ echo ======================================
 echo.
 
 REM ==================================================
-REM  啟動工具
+REM 啟動工具
 REM ==================================================
+
 if exist "%SCITE_HOME%\SciTE.exe" (
     start "" /MIN "%SCITE_HOME%\SciTE.exe"
     start "" /MIN "%SCITE_HOME%\SciTE.exe"
 )
 
 REM === 切換到虛擬磁碟 ===
+
 %DRIVE%
 
 REM ==================================================
-REM  保持命令列
+REM 保持命令列
 REM ==================================================
+
 start /min "CMD-1" cmd /k
-start /min  "CMD-2" cmd /k
-start /min" CMD-3" cmd /k
+start /min "CMD-2" cmd /k
+start /min "CMD-3" cmd /k
 start /min "CMD-4" cmd /k
 
-REM　啟動 run-rustcms.exe 之後用 firefox 開啟動態網頁編輯
+REM ==================================================
+REM 啟動 rustcms
+REM ==================================================
+
 start /min "rustcms" cmd /k "cd /d %DRIVE%\projects\rustcms &amp;&amp; cms.exe"
+
 timeout /t 3 /nobreak &gt;nul
+
 start "" firefox -new-tab https://localhost:5000
 
-REM　啟動 all
+REM ==================================================
+REM 啟動 all
+REM ==================================================
+
 start /min "all" cmd /k "cd /d %DRIVE%\projects\cycuorg\all &amp;&amp; cms.exe"
+
 timeout /t 3 /nobreak &gt;nul
+
 start "" firefox -new-tab https://localhost:5001
 
-REM　啟動 art
+REM ==================================================
+REM 啟動 art
+REM ==================================================
+
 start /min "art" cmd /k "cd /d %DRIVE%\projects\cycuorg\art &amp;&amp; cms.exe"
+
 timeout /t 3 /nobreak &gt;nul
+
 start "" firefox -new-tab https://localhost:5002
 
-REM　啟動 clothing
+REM ==================================================
+REM 啟動 clothing
+REM ==================================================
+
+echo.
+echo ======================================
+echo Starting CLOTHING CMS
+echo ======================================
+
+REM 確認原始目錄
+
+if not exist "%DRIVE%\projects\cycuorg\clothing\cms.exe" (
+    echo ERROR: clothing cms.exe not found.
+    goto CLOTHING_FIREFOX
+)
+
+REM 在原始目錄啟動，不移動、不複製
+
 start /min "clothing" cmd /k "cd /d %DRIVE%\projects\cycuorg\clothing &amp;&amp; cms.exe"
-timeout /t 3 /nobreak &gt;nul
+
+REM 等待 Port 5003，最多 30 秒
+
+set COUNT=0
+
+:WAIT_CLOTHING
+
+powershell -NoProfile -Command ^
+"$c = New-Object System.Net.Sockets.TcpClient; try {$c.Connect('127.0.0.1',5003); exit 0} catch {exit 1} finally {$c.Dispose()}" &gt;nul 2&gt;&amp;1
+
+if not errorlevel 1 goto CLOTHING_READY
+
+set /a COUNT+=1
+
+if %COUNT% GEQ 30 goto CLOTHING_TIMEOUT
+
+timeout /t 1 /nobreak &gt;nul
+
+goto WAIT_CLOTHING
+
+
+:CLOTHING_READY
+
+echo.
+echo [OK] CLOTHING HTTPS PORT 5003 READY.
+
+goto CLOTHING_FIREFOX
+
+
+:CLOTHING_TIMEOUT
+
+echo.
+echo [WARNING] CLOTHING PORT 5003 NOT READY.
+echo Please check clothing CMD window.
+echo.
+
+:CLOTHING_FIREFOX
+
+REM 無論是否監聽成功，都保留 Firefox 開啟動作
+
 start "" firefox -new-tab https://localhost:5003
 
-REM　啟動 health
+REM ==================================================
+REM 啟動 health
+REM ==================================================
+
 start /min "health" cmd /k "cd /d %DRIVE%\projects\cycuorg\health &amp;&amp; cms.exe"
+
 timeout /t 3 /nobreak &gt;nul
+
 start "" firefox -new-tab https://localhost:5004
 
-REM　啟動 history
+REM ==================================================
+REM 啟動 history
+REM ==================================================
+
 start /min "history" cmd /k "cd /d %DRIVE%\projects\cycuorg\history &amp;&amp; cms.exe"
+
 timeout /t 3 /nobreak &gt;nul
+
 start "" firefox -new-tab https://localhost:5005
 
-REM　啟動 learning
+REM ==================================================
+REM 啟動 learning
+REM ==================================================
+
 start /min "learning" cmd /k "cd /d %DRIVE%\projects\cycuorg\learning &amp;&amp; cms.exe"
+
 timeout /t 3 /nobreak &gt;nul
+
 start "" firefox -new-tab https://localhost:5006
 
-REM　啟動 living
+REM ==================================================
+REM 啟動 living
+REM ==================================================
+
 start /min "living" cmd /k "cd /d %DRIVE%\projects\cycuorg\living &amp;&amp; cms.exe"
+
 timeout /t 3 /nobreak &gt;nul
+
 start "" firefox -new-tab https://localhost:5007
 
-REM　啟動 recipes
+REM ==================================================
+REM 啟動 recipes
+REM ==================================================
+
 start /min "recipes" cmd /k "cd /d %DRIVE%\projects\cycuorg\recipes &amp;&amp; cms.exe"
+
 timeout /t 3 /nobreak &gt;nul
+
 start "" firefox -new-tab https://localhost:5008
 
-REM　啟動 tech
+REM ==================================================
+REM 啟動 tech
+REM ==================================================
+
 start /min "tech" cmd /k "cd /d %DRIVE%\projects\cycuorg\tech &amp;&amp; cms.exe"
+
 timeout /t 3 /nobreak &gt;nul
+
 start "" firefox -new-tab https://localhost:5009
 
-REM　啟動 tourism
+REM ==================================================
+REM 啟動 tourism
+REM ==================================================
+
 start /min "tourism" cmd /k "cd /d %DRIVE%\projects\cycuorg\tourism &amp;&amp; cms.exe"
+
 timeout /t 3 /nobreak &gt;nul
+
 start "" firefox -new-tab https://localhost:5010
 
-REM start /min "SCMS" cmd /k "cd /d %DRIVE%\tmp\cmsite &amp;&amp; python cms\wsgi.py"
-REM start /min "Leo Editor" cmd /k "leo"
+REM ==================================================
+REM 啟動 Zed
+REM ==================================================
+
 Zed %DRIVE%\projects\rustcms
 
-REM start /min %DRIVE%\Zed\Zed.exe
+REM ==================================================
+REM 結束
+REM ==================================================
+
+echo.
+echo ======================================
+echo  ALL CMS STARTUP COMMANDS COMPLETED
+echo ======================================
+
+REM 保持原本批次視窗
+
 </pre>
-<p></p>
+<p>關閉 stop.bat:</p>
+<pre class="brush:js;auto-links:false;toolbar:false" contenteditable="false">@echo off
+set DRIVE=R:
+
+taskkill /IM python.exe /F
+taskkill /IM pythonw.exe /F
+REM taskkill /IM adb.exe /F
+taskkill /IM scite.exe /F
+taskkill /IM ugraf.exe /F
+taskkill /IM webotsw.exe /F
+taskkill /IM solvespace.exe /F
+taskkill /IM sharex.exe /F
+taskkill /IM leo.exe /F
+taskkill /IM zed.exe /F
+taskkill /IM cms.exe /F
+
+echo Unmounting %DRIVE% ...
+subst %DRIVE% /D
+
+REM 關閉 cmd 指令視窗
+taskkill /IM cmd.exe /F
+
+echo Done.
+
+EXIT
+</pre>
+<p><br></p>
+<h2>轉檔</h2>
+
+<p><a href="/downloads/md2html.7z">md2html.7z</a> 配合 rustcms 使用，將 Markdown 轉為 Html，並將 H1、H2、H3 標註一律轉為 H4。</p>
 <h1>代理</h1>
+
 
 <p>議題:</p>
 <p style="padding-left: 30px;">如何使用近端 AI 代理整理 CMS 資料? 給定特定類別與主題，由 AI 代理自行尋找資料，整理納入 CMS 系統且自動提交推送到 Github 後回報結果。</p>
 <h1>Git</h1>
 
 
+
+
 <p>議題:</p>
 <p>git 少量多次推送與集合大量資料後少批推送的差別何在? 比較推薦哪種方式進行資料維護？</p>
+<h1>音訊</h1>
+<p>利用電腦播放 mp3 音樂，可以透過 <a href="https://vb-audio.com/Voicemeeter/banana.htm">Voicemeeter Banana</a> 軟體，將音訊同時送到兩個藍芽喇叭。</p>
+<p>類似的功能採用 Rust 製作: </p>
 <p><br></p>
