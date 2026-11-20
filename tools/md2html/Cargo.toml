@@ -1,0 +1,11 @@
+[package]
+name = "markdown-to-html-gui"
+version = "0.1.0"
+edition = "2021"
+description = "Simple Markdown to HTML converter with GUI"
+authors = ["CMS-Rust Helper"]
+
+[dependencies]
+eframe = "0.29"
+egui = "0.29"
+pulldown-cmark = { version = "0.12", default-features = false, features = ["html"] }

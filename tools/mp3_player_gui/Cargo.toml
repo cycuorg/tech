@@ -1,0 +1,21 @@
+[package]
+name = "mp3_player_gui"
+version = "0.1.0"
+edition = "2021"
+description = "圖形介面 MP3 播放器，支援同時輸出到多個已配對的藍牙裝置"
+authors = ["mp3_player_gui"]
+
+[dependencies]
+eframe = "0.29"
+egui = "0.29"
+rodio = { version = "0.19", features = ["symphonia-mp3"] }
+cpal = "0.15"
+rfd = "0.15"
+anyhow = "1"
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.58", features = [
+    "Win32_Media_Audio",
+    "Win32_Media_Audio_Endpoints",
+    "Win32_System_Com",
+] }
