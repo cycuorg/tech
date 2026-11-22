@@ -67,30 +67,34 @@ fn load_chinese_fonts(ctx: &egui::Context) {
 
 /// 背景工作狀態
 enum WorkerMsg {
-    Progress {
-        current: usize,
-        total: usize,
-        msg: String,
-    },
-    Done {
-        path: PathBuf,
-    },
+    Progress { current: usize, total: usize, msg: String },
+    Done { path: PathBuf },
     Error(String),
 }
 
 /// 將整片 Audio CD 轉成單一 MP3
-fn convert_whole_cd_to_mp3(output_path: PathBuf, tx: Sender<WorkerMsg>) -> Result<()> {
+fn convert_whole_cd_to_mp3(
+    output_path: PathBuf,
+    tx: Sender<WorkerMsg>,
+) -> Result<()> {
     let _ = tx.send(WorkerMsg::Progress {
         current: 0,
         total: 1,
         msg: "正在開啟光碟機…".to_string(),
     });
 
-    let reader = CdReader::open_default().context("無法開啟預設光碟機，請確認已插入 Audio CD")?;
+    let reader = CdReader::open_default()
+        .context("無法開啟預設光碟機，請確認已插入 Audio CD")?;
 
-    let toc = reader.read_toc().context("讀取 TOC（目錄）失敗")?;
+    let toc = reader
+        .read_toc()
+        .context("讀取 TOC（目錄）失敗")?;
 
-    let audio_tracks: Vec<_> = toc.tracks.iter().filter(|t| t.is_audio).collect();
+    let audio_tracks: Vec<_> = toc
+        .tracks
+        .iter()
+        .filter(|t| t.is_audio)
+        .collect();
 
     if audio_tracks.is_empty() {
         return Err(anyhow!("此光碟沒有音軌"));
@@ -103,9 +107,10 @@ fn convert_whole_cd_to_mp3(output_path: PathBuf, tx: Sender<WorkerMsg>) -> Resul
         msg: format!("發現 {} 首音軌，開始讀取…", total_tracks),
     });
 
-    // 建立 MP3 編碼器（44.1 kHz 立體聲，192 kbps CBR）
+    // 建立 MP3 編碼器（44.1 kHz 立體聲，320 kbps CBR）
+    // 320 kbps 為 MP3 標準最高位元率，相容性最好且最接近 CD 音質
     let mut encoder = Mp3Encoder::new(Mp3EncoderConfig {
-        bitrate_kbps: 32,
+        bitrate_kbps: 320,
         vbr_quality: None,
     });
 
@@ -203,11 +208,7 @@ impl eframe::App for App {
 
         for msg in messages {
             match msg {
-                WorkerMsg::Progress {
-                    current,
-                    total,
-                    msg,
-                } => {
+                WorkerMsg::Progress { current, total, msg } => {
                     self.progress = if total > 0 {
                         current as f32 / total as f32
                     } else {
@@ -238,10 +239,15 @@ impl eframe::App for App {
                 ui.label("將整片 Audio CD 的所有音軌串接成一個大 MP3 檔案");
                 ui.add_space(20.0);
 
-                let btn = egui::Button::new(egui::RichText::new("整片轉為mp3").size(22.0))
-                    .min_size(egui::vec2(220.0, 50.0));
+                let btn = egui::Button::new(
+                    egui::RichText::new("整片轉為mp3").size(22.0),
+                )
+                .min_size(egui::vec2(220.0, 50.0));
 
-                if ui.add_enabled(!self.is_working, btn).clicked() {
+                if ui
+                    .add_enabled(!self.is_working, btn)
+                    .clicked()
+                {
                     // 讓使用者選擇輸出檔案
                     let dialog = rfd::FileDialog::new()
                         .set_title("選擇 MP3 儲存位置")
@@ -276,22 +282,21 @@ impl eframe::App for App {
                     ui.add_space(8.0);
                 }
 
-                ui.label(egui::RichText::new(&self.status).size(16.0).color(
-                    if self.status.starts_with("錯誤") {
-                        egui::Color32::RED
-                    } else if self.status.starts_with("完成") {
-                        egui::Color32::from_rgb(0, 140, 0)
-                    } else {
-                        egui::Color32::DARK_GRAY
-                    },
-                ));
+                ui.label(
+                    egui::RichText::new(&self.status)
+                        .size(16.0)
+                        .color(if self.status.starts_with("錯誤") {
+                            egui::Color32::RED
+                        } else if self.status.starts_with("完成") {
+                            egui::Color32::from_rgb(0, 140, 0)
+                        } else {
+                            egui::Color32::DARK_GRAY
+                        }),
+                );
 
                 if let Some(path) = &self.last_output {
                     ui.add_space(10.0);
-                    ui.hyperlink_to(
-                        "開啟檔案所在資料夾",
-                        path.parent().unwrap_or(path).to_string_lossy(),
-                    );
+                    ui.hyperlink_to("開啟檔案所在資料夾", path.parent().unwrap_or(path).to_string_lossy());
                 }
 
                 ui.add_space(30.0);
