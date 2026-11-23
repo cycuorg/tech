@@ -13,6 +13,13 @@
 
 
 
+
+
+
+
+
+
+
 <p>all: <a href="https://cycu.org/all">https://cycu.org/all</a> (包羅萬象)</p>
 <p>health: <a href="https://cycu.org/health">https://cycu.org/health</a> (健康)</p>
 <p>recipes: <a href="https://cycu.org/recipes">https://cycu.org/recipes</a> (食譜)</p>
@@ -24,6 +31,13 @@
 <p>art: <a href="https://cycu.org/art">https://cycu.org/art</a> (藝術)</p>
 <p>易經: <a href="https://cycu.org/change">https://cycu.org/change</a> (易經)</p>
 <h1>啟動</h1>
+
+
+
+
+
+
+
 
 
 
@@ -395,8 +409,22 @@ EXIT
 
 
 
+
+
+
+
+
+
+
 <p><a href="/downloads/md2html.7z">md2html.7z</a> 配合 rustcms 使用，將 Markdown 轉為 Html，並將 H1、H2、H3 標註一律轉為 H4。</p>
 <h1>代理</h1>
+
+
+
+
+
+
+
 
 
 
@@ -456,19 +484,1584 @@ EXIT
 
 
 
+
+
+
+
+
+
+
 <p>議題:</p>
 <p>git 少量多次推送與集合大量資料後少批推送的差別何在? 比較推薦哪種方式進行資料維護？</p>
 <h1>音訊</h1>
+
+
+
+
+
+
 <p>利用電腦播放 mp3 音樂，可以透過 <a href="https://vb-audio.com/Voicemeeter/banana.htm">Voicemeeter Banana</a> 軟體，將音訊同時送到兩個藍芽喇叭。</p>
 <p><a href="https://vb-audio.com/Voicemeeter/banana.htm">Voicemeeter Banana</a> 安裝後，C:\Program Files (x86)\VB\Voicemeeter\voicemeeter_x64.exe 為 standard 版，而 C:\Program Files (x86)\VB\Voicemeeter\voicemeeterpro_x64.exe 則為 pro 版。</p>
 <p>以 voicemeeterpro_x64.exe 為例，最右上方的 Hardware Out 可透過 A1、A2 與 A3 選擇後，分別對應到電腦已經連線的實體 Speaker、藍芽喇叭、藍芽耳機或實體耳機，上方 Hardware Out 左邊的 Virtual Input 則可透過電腦的設定 - 音訊 - 輸出 選擇 Voicemeeter Input。之後所有電腦的音訊輸出都會經過 Voicemeeter Input 進行轉訊，然後再由 Voicemeeter 設定的 A1、A2 與 A3 同時播放。</p>
 <p><img src="/images/voicemeeterpro_x64.png" alt="" width="300" height="182"></p>
-<p>類似能同時將電腦音訊播放到多個藍芽喇叭的功能，採用 Rust 製作: <a href="/downloads/mp3_player_multi_output.zip">mp3_player_multi_output.zip</a></p>
+<p>類似能同時將電腦音訊播放到多個藍芽喇叭的功能，採用 Rust 製作: <a href="/downloads/mp3_player_multi_output.zip">mp3_player_multi_output.zip</a> </p>
 <p>啟動 mp3_player_multi_output 後，選擇所要播放的 mp3 檔案後，將輸出裝置設為 Voicemeeter Input，按下開始播放就可以選擇由 Voicemeeter 設定的 A1、A2 與 A3 同時播放。利用自建的 mp3 播放器，可以透過虛擬音訊等化器，配合播放環境控制輸出各頻段的增益。</p>
+<p>可選擇 mp3 或 FLAC 格式檔案，同時在多個藍芽喇叭播出: <a href="/downloads/mp3_flac_player_gui.7z">mp3_flac_player_gui.7z</a></p>
 <p><img src="/images/mp3_player_multi_output.png" alt="" width="300" height="263"></p>
 <p>將 audio cd 轉為無損 <a href="https://en.wikipedia.org/wiki/FLAC">FLAC</a>: <a href="/downloads/cd2flac.7z">cd2flac.7z</a></p>
 <p><img src="/images/cd_to_flac.png" alt="" width="300" height="376"><br></p>
 <p><br></p>
+<h2>flac_mp3_player</h2>
+<p><a href="https://github.com/cycuorg/flac_mp3_player">https://github.com/cycuorg/flac_mp3_player</a> </p>
+<h4><strong>Rust </strong><code>src/main.rs</code><strong> 完整語法與程式設計解析</strong></h4>
+<p><code>main.rs</code> 是一個使用 Rust 開發的 <strong>MP3 / FLAC 多裝置同步音樂播放器</strong>。此一音樂播放程式整合了 Windows 系統音量控制、串流解碼、10 段參數式等化器（PEQ）、多個音訊輸出裝置同步播放、播放定位，以及多種 GUI 色彩主題。</p>
+<p>以 Rust 學習與實際軟體工程的角度來解說：</p>
+<ol>
+<li>Rust 的語法、型別、所有權與借用。</li>
+<li>各種 <code>struct</code>、<code>impl</code>、<code>trait</code> 的設計目的。</li>
+<li><code>Arc</code>、<code>AtomicBool</code>、<code>AtomicUsize</code> 等多執行緒共享資料的原理。</li>
+<li>音訊解碼、串流播放與數位訊號處理的實作。</li>
+<li>egui 的 GUI 事件處理與畫面更新機制。</li>
+<li>整個程式的架構、資料流與設計優缺點。</li>
+</ol>
+<p>這份程式相當適合作為 Rust 中階到進階的學習教材，因為它同時使用了泛型、Trait Object、閉包、迭代器、錯誤處理、智慧指標、原子變數及非同步音訊播放架構。</p>
+<h4><strong>一、整體程式架構</strong></h4>
+<p>先把近 970 行的程式分成 13 個功能模組來理解。</p>
+<h4><strong>main.rs 架構圖</strong></h4>
+<p><strong>main()</strong></p>
+<p>程式入口、視窗設定、字型與主題初始化</p>
+<p><strong>App / eframe::App</strong></p>
+<p>GUI 狀態、使用者操作、播放控制、畫面更新</p>
+<p><strong>音訊裝置管理</strong></p>
+<p>CPAL、OutputStream、Sink</p>
+<p><strong>音訊解碼</strong></p>
+<p>rodio、Decoder、Source</p>
+<p><strong>串流播放引擎</strong></p>
+<p>GatedSource、Iterator</p>
+<p><strong>數位音訊處理</strong></p>
+<p>Biquad、PEQ、濾波器</p>
+<p><strong>Windows 系統控制</strong></p>
+<p>COM、Audio Endpoint</p>
+<p><strong>介面設計</strong></p>
+<p>egui、Theme、Slider</p>
+<p>各區塊在原始程式中的位置：</p>
+<table>
+<thead>
+<tr>
+<th>行數</th>
+<th>主要內容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1–12</td>
+<td>引入外部函式庫</td>
+</tr>
+<tr>
+<td>14–95</td>
+<td>Windows 音量控制</td>
+</tr>
+<tr>
+<td>98–200</td>
+<td>常數、色彩主題</td>
+</tr>
+<tr>
+<td>203–258</td>
+<td>播放裝置、濾波器、Source 型別</td>
+</tr>
+<tr>
+<td>259–311</td>
+<td>音訊解碼與定位</td>
+</tr>
+<tr>
+<td>312–425</td>
+<td>GatedSource 串流播放引擎</td>
+</tr>
+<tr>
+<td>427–530</td>
+<td>App 狀態、音訊裝置、中文字型</td>
+</tr>
+<tr>
+<td>533–642</td>
+<td>App 播放控制方法</td>
+</tr>
+<tr>
+<td>645–953</td>
+<td>GUI 介面與事件處理</td>
+</tr>
+<tr>
+<td>955–969</td>
+<td>程式入口</td>
+</tr>
+</tbody>
+</table>
+<h4><strong>二、Rust 的模組引用與基本語法</strong></h4>
+<p>先看第 1–12 行。</p>
+<pre class="brush:rust;auto-links:false;toolbar:false" contenteditable="false">use cpal::traits::{DeviceTrait, HostTrait};
+use eframe::egui::{self, Color32, RichText, Vec2};
+use rodio::{Decoder, OutputStream, Sink, Source};
+use std::fs::File;
+use std::io::BufReader;
+use std::path::{Path, PathBuf};
+use std::sync::{
+    atomic::{AtomicBool, AtomicU32, AtomicU64, AtomicUsize, Ordering},
+    Arc,
+};
+use std::time::{Duration, Instant};</pre>
+<h4><strong>2.1 </strong><code>use</code><strong> 是什麼？</strong></h4>
+<p><code>use</code> 的作用是將其他模組中的型別、函式或 Trait 引入目前的作用範圍。</p>
+<p>例如：</p>
+<pre><code>use std::fs::File;
+</code></pre>
+<p>之後就可以直接使用：</p>
+<pre><code>let file = File::open("music.mp3");
+</code></pre>
+<p>而不用每次都寫：</p>
+<pre><code>let file = std::fs::File::open("music.mp3");
+</code></pre>
+<p>這和 Python 的：</p>
+<pre><code>from pathlib import Path import ...
+</code></pre>
+<p>概念類似，但 Rust 的模組與型別系統更加嚴格。</p>
+<h4><strong>2.2 </strong><code>{}</code><strong> 是什麼？</strong></h4>
+<p>例如：</p>
+<pre><code>use std::path::{Path, PathBuf};
+</code></pre>
+<p>代表一次引入同一個模組中的多個名稱。</p>
+<p>等同於：</p>
+<pre><code>use std::path::Path;
+use std::path::PathBuf;
+</code></pre>
+<h4><strong>2.3 </strong><code>self</code><strong> 的作用</strong></h4>
+<pre><code>use eframe::egui::{self, Color32, RichText, Vec2};
+</code></pre>
+<p>這裡的 <code>self</code> 代表引入 <code>egui</code> 模組本身。</p>
+<p>所以後面可以混合使用：</p>
+<pre><code>egui::CentralPanel
+Color32
+RichText
+Vec2
+</code></pre>
+<p>這是一種很常見的 Rust 寫法。</p>
+<h4><strong>2.4 本程式引入的主要函式庫</strong></h4>
+<table>
+<thead>
+<tr>
+<th>函式庫</th>
+<th>功能</th>
+<th>在程式中的用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>cpal</td>
+<td>跨平台音訊裝置</td>
+<td>列出輸出裝置</td>
+</tr>
+<tr>
+<td>rodio</td>
+<td>音訊播放</td>
+<td>解碼、播放、控制 Sink</td>
+</tr>
+<tr>
+<td>eframe</td>
+<td>GUI 框架</td>
+<td>建立桌面程式</td>
+</tr>
+<tr>
+<td>egui</td>
+<td>GUI 元件</td>
+<td>Slider、Button、Panel</td>
+</tr>
+<tr>
+<td>anyhow</td>
+<td>錯誤處理</td>
+<td>統一回傳錯誤</td>
+</tr>
+<tr>
+<td>windows</td>
+<td>Windows API</td>
+<td>系統音量控制</td>
+</tr>
+<tr>
+<td>rfd</td>
+<td>原生檔案對話框</td>
+<td>選擇 MP3 / FLAC</td>
+</tr>
+</tbody>
+</table>
+<p>另外，<code>Arc</code> 和 <code>Atomic</code> 都是 Rust 標準函式庫的功能，不需要額外安裝。</p>
+<h4><strong>三、Windows 系統音量控制：COM 與 unsafe</strong></h4>
+<p>原始程式第 14–95 行。</p>
+<p>這是整份程式中比較特殊的部分，因為它不使用 rodio 控制音量，而是直接透過 Windows API 修改作業系統的預設播放裝置音量。</p>
+<h4><strong>3.1 為什麼要區分兩種音量？</strong></h4>
+<p>本程式有兩種不同的音量概念：</p>
+<table>
+<thead>
+<tr>
+<th>音量</th>
+<th>控制對象</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Windows Endpoint Volume</td>
+<td>Windows 預設播放端點</td>
+<td>影響使用該裝置的其他程式</td>
+</tr>
+<tr>
+<td>rodio Sink Volume</td>
+<td>播放器中的單一音訊串流</td>
+<td>只影響本播放器的該個輸出</td>
+</tr>
+</tbody>
+</table>
+<p>例如：</p>
+<p>假設 Windows 預設喇叭音量是 80%，而播放器中的某個 Sink 音量是 50%。</p>
+<p>實際輸出會同時受到兩層音量控制。</p>
+<p>因此，兩者不能混為一談。</p>
+<h4><strong>3.2 </strong><code>#[cfg(windows)]</code></h4>
+<pre><code>#[cfg(windows)]
+fn get_windows_endpoint_volume() -&gt; anyhow::Result&lt;f32&gt; {
+</code></pre>
+<p><code>cfg</code> 是 Rust 的條件編譯屬性。</p>
+<p>這表示：</p>
+<p>只有在 Windows 平台編譯時，才會編譯這個函式。</p>
+<p>相反地：</p>
+<pre><code>#[cfg(not(windows))]
+fn get_windows_endpoint_volume() -&gt; anyhow::Result&lt;f32&gt; {
+    anyhow::bail!("Windows 音效端點音量控制僅支援 Windows")
+}
+</code></pre>
+<p>表示在非 Windows 平台，使用另一個同名函式。</p>
+<p>這種設計的好處是：</p>
+<ul>
+<li>Windows 可以直接控制系統音量。</li>
+<li>Linux、macOS 仍然可以編譯其他播放器功能。</li>
+<li>不需要在執行期間才判斷作業系統。</li>
+</ul>
+<p>這稱為 <em>Conditional Compilation</em>。</p>
+<h4><strong>3.3 </strong><code>anyhow::Result&lt;f32&gt;</code><strong> 是什麼？</strong></h4>
+<p>這是 Rust 常見的錯誤回傳型別。</p>
+<p>它相當於：</p>
+<pre><code>Result&lt;f32, anyhow::Error&gt;
+</code></pre>
+<p>Rust 的 <code>Result</code> 有兩種可能：</p>
+<pre><code>Ok(value)
+Err(error)
+</code></pre>
+<p>例如：</p>
+<pre><code>Ok(0.85)
+</code></pre>
+<p>表示成功讀取音量，數值是 85%。</p>
+<p>而：</p>
+<pre><code>Err(error)
+</code></pre>
+<p>表示執行過程發生錯誤。</p>
+<p>為什麼不直接回傳 <code>f32</code>？</p>
+<p>因為 COM 初始化、取得音訊裝置、呼叫 Windows API 都可能失敗。</p>
+<p>使用 <code>Result</code> 可以讓呼叫者知道是否成功，而不必用特殊數值表示錯誤。</p>
+<h4><strong>3.4 </strong><code>unsafe</code><strong> 的用途</strong></h4>
+<pre><code>unsafe {
+    let hr = CoInitializeEx(None, COINIT_MULTITHREADED);
+}
+</code></pre>
+<p>Rust 預設會檢查記憶體安全性。</p>
+<p>但是 Windows COM API 有一些操作需要呼叫者承擔額外的安全責任，因此部分介面被放在 <code>unsafe</code> 區塊中。</p>
+<p><code>unsafe</code> 並不表示這段程式一定不安全。</p>
+<p>它的意思是：</p>
+<blockquote>
+<p>編譯器無法完全證明這些操作符合安全條件，必須由程式設計者負責。</p>
+</blockquote>
+<h4><strong>3.5 COM 初始化與 HRESULT</strong></h4>
+<pre><code>let hr = CoInitializeEx(None, COINIT_MULTITHREADED);
+</code></pre>
+<p>這裡使用 Windows COM 的多執行緒 Apartment 模型。</p>
+<p>接著：</p>
+<pre class="brush:rust;auto-links:false;toolbar:false" contenteditable="false">let initialized = if hr.0 &gt;= 0 {
+    true
+} else if hr.0 == 0x8001_0106u32 as i32 {
+    false
+} else {
+    return Err(anyhow::anyhow!(
+        "COM 初始化失敗，HRESULT：0x{:08X}",
+        hr.0 as u32
+    ));
+};</pre>
+<p>這裡有幾個值得學習的語法。</p>
+<p><strong>第一：</strong><code>hr.0</code></p>
+<p><code>hr</code> 是 HRESULT 型別的值，而 <code>.0</code> 表示存取其第一個 tuple 欄位。</p>
+<p><strong>第二：</strong><code>as i32</code></p>
+<p>型別轉換。</p>
+<p><strong>第三：</strong><code>{:08X}</code></p>
+<p>格式化輸出：</p>
+<ul>
+<li><code>X</code>：十六進位大寫。</li>
+<li><code>8</code>：至少八個字元。</li>
+<li><code>0</code>：不足八位時前面補零。</li>
+</ul>
+<p><strong>第四：</strong><code>return Err(...)</code></p>
+<p>立即結束函式，回傳錯誤。</p>
+<h4><strong>3.6 閉包 </strong><code>||</code></h4>
+<pre class="brush:rust;auto-links:false;toolbar:false" contenteditable="false">let result = (|| -&gt; anyhow::Result&lt;f32&gt; {
+    let enumerator =
+        CoCreateInstance::&lt;_, IMMDeviceEnumerator&gt;(
+            &amp;MMDeviceEnumerator,
+            None,
+            CLSCTX_ALL
+        )?;
+
+    let device =
+        enumerator.GetDefaultAudioEndpoint(eRender, eMultimedia)?;
+
+    let endpoint: IAudioEndpointVolume =
+        device.Activate::&lt;IAudioEndpointVolume&gt;(CLSCTX_ALL, None)?;
+
+    Ok(endpoint.GetMasterVolumeLevelScalar()?.clamp(0.0, 1.0))
+})();</pre>
+<p>這是一個非常值得理解的 Rust 語法。</p>
+<p><code>||</code> 表示不接受任何參數的閉包。</p>
+<p>例如：</p>
+<pre><code>let f = || {
+    println!("Hello");
+};
+
+f();
+</code></pre>
+<p>這裡的寫法：</p>
+<pre><code>(|| -&gt; anyhow::Result&lt;f32&gt; {
+    // ...
+})()
+</code></pre>
+<p>分成兩個動作：</p>
+<ol>
+<li>建立一個閉包。</li>
+<li>立即呼叫這個閉包。</li>
+</ol>
+<p>為什麼要這樣設計？</p>
+<p>因為閉包內部使用了 <code>?</code>，可以讓多個 Windows API 錯誤自動傳回 <code>Result</code>。</p>
+<p>但是，閉包結束後，外層仍然能執行：</p>
+<pre><code>if initialized {
+    CoUninitialize();
+}
+</code></pre>
+<p>這樣就能確保 COM 的初始化與解除初始化有明確的生命週期。</p>
+<p>這是一種將錯誤處理與資源清理分離的設計方式。</p>
+<h4><strong>3.7 </strong><code>?</code><strong> 運算子</strong></h4>
+<p>例如：</p>
+<pre><code>let device = enumerator.GetDefaultAudioEndpoint(eRender, eMultimedia)?;
+</code></pre>
+<p><code>?</code> 的意思是：</p>
+<ul>
+<li>如果結果是 <code>Ok(value)</code>，取出 value 繼續執行。</li>
+<li>如果結果是 <code>Err(error)</code>，立即回傳錯誤。</li>
+</ul>
+<p>相當於：</p>
+<pre><code>let device = match enumerator.GetDefaultAudioEndpoint(eRender, eMultimedia) {
+    Ok(value) =&gt; value,
+    Err(error) =&gt; return Err(error.into()),
+};
+</code></pre>
+<p><code>?</code> 是 Rust 非常重要的語法，建議熟練掌握。</p>
+<h4><strong>四、常數與 ThemePalette：Rust 資料結構設計</strong></h4>
+<p>原始程式第 98–200 行。</p>
+<h4><strong>4.1 </strong><code>const</code></h4>
+<pre><code>const EQ_BANDS: usize = 10;
+
+const EQ_FREQUENCIES: [f32; EQ_BANDS] = [
+    20.0, 36.0, 65.0, 117.0, 210.0,
+    378.0, 680.0, 1224.0, 2203.0, 4000.0
+];
+</code></pre>
+<p><code>const</code> 表示編譯期常數。</p>
+<p>這裡：</p>
+<pre><code>[ f32; EQ_BANDS ]
+</code></pre>
+<p>代表：</p>
+<ul>
+<li>陣列元素型別為 <code>f32</code>。</li>
+<li>陣列長度為 10。</li>
+</ul>
+<p>與 <code>Vec&lt;f32&gt;</code> 不同，陣列長度固定。</p>
+<p>例如：</p>
+<pre><code>let numbers: [i32; 3] = [10, 20, 30];
+</code></pre>
+<h4><strong>4.2 為什麼使用 </strong><code>usize</code><strong>？</strong></h4>
+<pre><code>const EQ_BANDS: usize = 10;
+</code></pre>
+<p><code>usize</code> 是 Rust 用於索引、記憶體大小與集合長度的常用整數型別。</p>
+<p>例如：</p>
+<pre><code>let values = [10, 20, 30];
+let index: usize = 1;
+
+println!("{}", values[index]);
+</code></pre>
+<p>輸出：</p>
+<pre><code>20
+</code></pre>
+<h4><strong>4.3 </strong><code>struct ThemePalette</code></h4>
+<pre><code>#[derive(Clone, Copy)]
+struct ThemePalette {
+    bg: Color32,
+    card: Color32,
+    border: Color32,
+    text: Color32,
+    accent: Color32,
+}
+</code></pre>
+<p><code>struct</code> 是結構體，用來組合多個相關資料。</p>
+<p>這裡的設計相當合理。</p>
+<p>如果不用結構體，每次更新畫面都要傳入很多顏色：</p>
+<pre><code>apply_theme(
+    bg,
+    card,
+    border,
+    text,
+    accent,
+);
+</code></pre>
+<p>使用結構體後，只需要：</p>
+<pre><code>let palette = theme_palette(index);
+</code></pre>
+<p>就可以使用：</p>
+<pre><code>palette.bg
+palette.card
+palette.text
+palette.accent
+</code></pre>
+<h4><strong>4.4 </strong><code>#[derive(Clone, Copy)]</code></h4>
+<p>這個屬性讓 Rust 自動實作兩個 Trait。</p>
+<ul>
+<li><code>Clone</code>：允許明確複製。</li>
+<li><code>Copy</code>：允許以複製方式傳遞，而不移轉所有權。</li>
+</ul>
+<p>因為 <code>Color32</code> 本身是適合複製的小型資料，所以這種設計很合適。</p>
+<h4><strong>4.5 </strong><code>match</code><strong> 表達式</strong></h4>
+<pre><code>fn theme_palette(index: usize) -&gt; ThemePalette {
+    match index % THEME_NAMES.len() {
+        1 =&gt; ThemePalette { /* ... */ },
+        2 =&gt; ThemePalette { /* ... */ },
+        3 =&gt; ThemePalette { /* ... */ },
+        4 =&gt; ThemePalette { /* ... */ },
+        _ =&gt; ThemePalette { /* ... */ },
+    }
+}
+</code></pre>
+<p>這是 Rust 的模式比對。</p>
+<p><code>match</code> 和其他語言的 <code>switch</code> 有點類似，但 Rust 的 <code>match</code> 是表達式，可以產生值。</p>
+<p>這裡：</p>
+<pre><code>index % THEME_NAMES.len()
+</code></pre>
+<p>利用取餘數的方式確保索引落在 0–4。</p>
+<p><code>_</code> 是萬用模式，代表其他所有情況。</p>
+<h4><strong>4.6 閉包建立 RGB 函式</strong></h4>
+<pre><code>let rgb = |r, g, b| Color32::from_rgb(r, g, b);
+</code></pre>
+<p>這是一個閉包。</p>
+<p>它等同於建立一個簡化的 RGB 轉換函式。</p>
+<p>所以：</p>
+<pre><code>bg: rgb(13, 18, 29),
+</code></pre>
+<p>比：</p>
+<pre><code>bg: Color32::from_rgb(13, 18, 29),
+</code></pre>
+<p>更簡潔。</p>
+<h4><strong>4.7 </strong><code>apply_theme()</code></h4>
+<pre class="brush:rust;auto-links:false;toolbar:false" contenteditable="false">fn apply_theme(ctx: &amp;egui::Context, index: usize) {
+    let p = theme_palette(index);
+    let light = index % THEME_NAMES.len() == 4;
+
+    let mut visuals = if light {
+        egui::Visuals::light()
+    } else {
+        egui::Visuals::dark()
+    };
+
+    visuals.panel_fill = p.bg;
+    visuals.window_fill = p.card;
+
+    ctx.set_visuals(visuals);
+}</pre>
+<p>這段展示了 Rust 的幾個特性：</p>
+<ul>
+<li><code>&amp;egui::Context</code>：借用 Context，不取得所有權。</li>
+<li><code>let mut</code>：允許修改變數。</li>
+<li><code>if ... else</code>：可以產生值。</li>
+<li><code>ctx.set_visuals()</code>：將主題套用到 GUI。</li>
+</ul>
+<p>值得注意：</p>
+<pre><code>let mut visuals
+</code></pre>
+<p>因為接下來會修改 <code>visuals</code> 的多個欄位，所以必須使用 <code>mut</code>。</p>
+<h4><strong>五、PlayingDevice：如何管理多個音訊輸出裝置</strong></h4>
+<p>原始程式第 203–258 行。</p>
+<h4><strong>5.1 PlayingDevice 結構體</strong></h4>
+<pre><code>struct PlayingDevice {
+    name: String,
+    _stream: OutputStream,
+    sink: Sink,
+    volume: f32,
+}
+</code></pre>
+<p>這個結構體代表一個正在播放音訊的輸出裝置。</p>
+<p>逐項說明：</p>
+<table>
+<thead>
+<tr>
+<th>欄位</th>
+<th>型別</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td>String</td>
+<td>裝置名稱</td>
+</tr>
+<tr>
+<td><code>_stream</code></td>
+<td>OutputStream</td>
+<td>維持音訊輸出串流</td>
+</tr>
+<tr>
+<td><code>sink</code></td>
+<td>Sink</td>
+<td>控制該裝置的播放</td>
+</tr>
+<tr>
+<td><code>volume</code></td>
+<td>f32</td>
+<td>該裝置的獨立音量</td>
+</tr>
+</tbody>
+</table>
+<p>其中最值得注意的是：</p>
+<pre><code>_stream: OutputStream
+</code></pre>
+<p>為什麼前面有底線？</p>
+<p>Rust 通常會對未使用的變數提出警告。</p>
+<p>但是這個欄位雖然沒有直接被程式讀取，卻有非常重要的作用：<strong>維持音訊串流的生命週期。</strong></p>
+<p>如果 <code>OutputStream</code> 被釋放，底層音訊輸出可能就會停止。</p>
+<p>因此，即使不直接使用它，也必須將它保存在 <code>PlayingDevice</code> 中。</p>
+<p>這是 Rust 中非常重要的資源管理觀念：</p>
+<blockquote>
+<p>物件的存在時間必須涵蓋它所管理的資源需要運作的時間。</p>
+</blockquote>
+<h4><strong>5.2 Biquad：數位音訊濾波器</strong></h4>
+<pre><code>#[derive(Clone)]
+struct Biquad {
+    b0: f32,
+    b1: f32,
+    b2: f32,
+    a1: f32,
+    a2: f32,
+    z1: f32,
+    z2: f32,
+}
+</code></pre>
+<p>這是一個二階數位濾波器。</p>
+<p>它不是單純調整音量，而是透過數學運算改變特定頻率的響應。</p>
+<p>Biquad 是音響 EQ、低通濾波器、高通濾波器及音效處理中非常常見的基本單元。</p>
+<h4><strong>其數學原理</strong></h4>
+<p>二階 IIR 濾波器的差分方程式為：</p>
+<p>\[ y[n]=b_0x[n]+b_1x[n-1]+b_2x[n-2] -a_1y[n-1]-a_2y[n-2] \]</p>
+<p>其中：</p>
+<ul>
+<li>\(x[n]\)：目前輸入的音訊樣本。</li>
+<li>\(y[n]\)：目前輸出的音訊樣本。</li>
+<li>\(b_0,b_1,b_2\)：前饋係數。</li>
+<li>\(a_1,a_2\)：回授係數。</li>
+</ul>
+<p><code>z1</code>、<code>z2</code> 則是用來保存濾波器過去的運算狀態。</p>
+<h4><strong>Default 實作</strong></h4>
+<pre><code>impl Default for Biquad {
+    fn default() -&gt; Self {
+        Self {
+            b0: 1.0,
+            b1: 0.0,
+            b2: 0.0,
+            a1: 0.0,
+            a2: 0.0,
+            z1: 0.0,
+            z2: 0.0,
+        }
+    }
+}
+</code></pre>
+<p>這裡使用：</p>
+<pre><code>impl Default for Biquad
+</code></pre>
+<p>表示為 <code>Biquad</code> 實作 Rust 的 <code>Default</code> Trait。</p>
+<p>因此可以使用：</p>
+<pre><code>let filter = Biquad::default();
+</code></pre>
+<p>這組初始係數代表：</p>
+<p>\[ y[n]=x[n] \]</p>
+<p>也就是沒有任何濾波效果，原音直接通過。</p>
+<h4><code>set_peaking()</code><strong>：設定 EQ 頻帶</strong></h4>
+<pre><code>fn set_peaking(
+    &amp;mut self,
+    sample_rate: f32,
+    frequency: f32,
+    q: f32,
+    gain_db: f32
+)
+</code></pre>
+<p>這個函式用來設定 Peaking EQ 的參數。</p>
+<p>四個參數分別是：</p>
+<table>
+<thead>
+<tr>
+<th>參數</th>
+<th>意義</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>&amp;mut self</code></td>
+<td>可修改目前濾波器</td>
+</tr>
+<tr>
+<td><code>sample_rate</code></td>
+<td>取樣率</td>
+</tr>
+<tr>
+<td><code>frequency</code></td>
+<td>中心頻率</td>
+</tr>
+<tr>
+<td><code>q</code></td>
+<td>品質因數，控制頻寬</td>
+</tr>
+<tr>
+<td><code>gain_db</code></td>
+<td>增益，單位 dB</td>
+</tr>
+</tbody>
+</table>
+<p>例如：</p>
+<pre><code>filter.set_peaking(44100.0, 1000.0, 1.0, 6.0);
+</code></pre>
+<p>代表設定：</p>
+<ul>
+<li>取樣率 44.1 kHz。</li>
+<li>中心頻率 1000 Hz。</li>
+<li>Q 值 1.0。</li>
+<li>增益 +6 dB。</li>
+</ul>
+<h4><strong>重要數學運算</strong></h4>
+<pre><code>let a = 10.0_f32.powf(gain_db / 40.0);
+</code></pre>
+<p>這裡使用浮點數的 <code>powf()</code>，計算：</p>
+<p>\[ A=10^{G/40} \]</p>
+<p>其中 \(G\) 是增益 dB。</p>
+<p>接著：</p>
+<pre><code>let w0 = 2.0 * PI * frequency / sample_rate;
+</code></pre>
+<p>換算成數位角頻率：</p>
+<p>\[ \omega_0=\frac{2\pi f_0}{f_s} \]</p>
+<p>這些公式來自 RBJ Audio EQ Cookbook。</p>
+<p>之後程式利用 <code>sin()</code>、<code>cos()</code> 計算濾波器係數。</p>
+<h4><code>process()</code><strong>：實際處理音訊</strong></h4>
+<pre><code>#[inline]
+fn process(&amp;mut self, input: f32) -&gt; f32 {
+    let output = self.b0 * input + self.z1;
+
+    self.z1 = self.b1 * input - self.a1 * output + self.z2;
+    self.z2 = self.b2 * input - self.a2 * output;
+
+    output
+}
+</code></pre>
+<p>這裡採用 Transposed Direct Form II。</p>
+<p>它的優點是可以用兩個狀態變數保存運算所需的歷史資料。</p>
+<p>每次傳入一個音訊樣本，就回傳一個處理後的樣本。</p>
+<p><code>#[inline]</code> 是編譯器提示，希望將函式內嵌到呼叫位置，減少函式呼叫開銷。</p>
+<p>不過是否真的內嵌，仍由編譯器決定。</p>
+<p><strong>設計上的重要觀念：</strong></p>
+<p>濾波器不能每處理一個樣本就重新建立。</p>
+<p>因為 <code>z1</code>、<code>z2</code> 必須連續保留，才能產生正確的濾波效果。</p>
+<p>所以每個頻道都需要自己的濾波器狀態。</p>
+<p>Pasted text(5).txt</p>
+<h4><strong>六、音訊解碼：Decoder、Source 與 Trait Object</strong></h4>
+<p>原始程式第 255–311 行。</p>
+<p>這個部分是整份程式的核心之一。</p>
+<h4><strong>6.1 為什麼使用串流解碼？</strong></h4>
+<pre><code>type StreamingDecoder = Box&lt;dyn Source&lt;Item = f32&gt; + Send&gt;;
+</code></pre>
+<p>先解釋這個型別別名。</p>
+<p><code>type</code> 可以替複雜型別取一個容易閱讀的名稱。</p>
+<p>原本的型別是：</p>
+<pre><code>Box&lt;dyn Source&lt;Item = f32&gt; + Send&gt;
+</code></pre>
+<p>拆開來看：</p>
+<table>
+<thead>
+<tr>
+<th>語法</th>
+<th>意義</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Box&lt;T&gt;</code></td>
+<td>在 Heap 配置資料的智慧指標</td>
+</tr>
+<tr>
+<td><code>dyn Source</code></td>
+<td>動態分派的 Trait Object</td>
+</tr>
+<tr>
+<td><code>Item = f32</code></td>
+<td>Source 輸出的項目型別是 f32</td>
+</tr>
+<tr>
+<td><code>Send</code></td>
+<td>可以安全地將物件移交至其他執行緒</td>
+</tr>
+</tbody>
+</table>
+<h4><strong>為什麼使用 </strong><code>dyn Source</code><strong>？</strong></h4>
+<p>rodio 的音訊來源可能是：</p>
+<ul>
+<li>Decoder。</li>
+<li>取樣率轉換後的 Source。</li>
+<li>套用音效後的 Source。</li>
+<li>跳過指定時間後的 Source。</li>
+</ul>
+<p>這些物件的具體型別可能不同，但都實作了 <code>Source</code> Trait。</p>
+<p>因此不必在程式中為每種來源建立不同的型別處理邏輯。</p>
+<p>可以統一使用：</p>
+<pre><code>Box&lt;dyn Source&lt;Item = f32&gt; + Send&gt;
+</code></pre>
+<p>這稱為 Trait Object。</p>
+<h4><strong>靜態分派與動態分派</strong></h4>
+<p>Rust 有兩種重要的多型實作方式。</p>
+<table>
+<thead>
+<tr>
+<th>方式</th>
+<th>語法</th>
+<th>特點</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>靜態分派</td>
+<td><code>impl Trait</code>、泛型</td>
+<td>編譯期決定具體型別</td>
+</tr>
+<tr>
+<td>動態分派</td>
+<td><code>dyn Trait</code></td>
+<td>執行期透過 Trait Object 呼叫</td>
+</tr>
+</tbody>
+</table>
+<p>本程式使用動態分派，主要是為了讓不同音訊處理鏈可以統一存放在同一個欄位中。</p>
+<h4><strong>6.2 open_audio_decoder()</strong></h4>
+<pre><code>fn open_audio_decoder(
+    path: &amp;Path
+) -&gt; anyhow::Result&lt;Decoder&lt;BufReader&lt;File&gt;&gt;&gt; {
+</code></pre>
+<p>這個函式負責開啟音樂檔案並建立解碼器。</p>
+<p>注意參數：</p>
+<pre><code>path: &amp;Path
+</code></pre>
+<p>這裡使用借用，而不是：</p>
+<pre><code>path: PathBuf
+</code></pre>
+<p>原因是函式只需要讀取路徑，不需要取得路徑的所有權。</p>
+<h4><code>Path</code><strong> 和 </strong><code>PathBuf</code><strong> 的差別</strong></h4>
+<table>
+<thead>
+<tr>
+<th>型別</th>
+<th>特性</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Path</code></td>
+<td>借用形式的路徑</td>
+</tr>
+<tr>
+<td><code>PathBuf</code></td>
+<td>擁有資料的路徑</td>
+</tr>
+</tbody>
+</table>
+<p>可以將它理解成：</p>
+<ul>
+<li><code>Path</code> 類似 <code>str</code>。</li>
+<li><code>PathBuf</code> 類似 <code>String</code>。</li>
+</ul>
+<h4><strong>取得副檔名</strong></h4>
+<pre><code>let ext = path
+    .extension()
+    .and_then(|e| e.to_str())
+    .map(|s| s.to_ascii_lowercase());
+</code></pre>
+<p>這段使用了 Rust 的 Option 鏈式操作。</p>
+<p>逐步說明：</p>
+<p><strong>第一步</strong></p>
+<pre><code>path.extension()
+</code></pre>
+<p>取得副檔名。</p>
+<p>可能得到：</p>
+<pre><code>Some("MP3")
+</code></pre>
+<p>也可能是：</p>
+<pre><code>None
+</code></pre>
+<p><strong>第二步</strong></p>
+<pre><code>.and_then(|e| e.to_str())
+</code></pre>
+<p>將副檔名轉成字串切片。</p>
+<p><strong>第三步</strong></p>
+<pre><code>.map(|s| s.to_ascii_lowercase())
+</code></pre>
+<p>轉成小寫。</p>
+<p>因此：</p>
+<pre><code>MP3
+Mp3
+mp3
+</code></pre>
+<p>最後都會變成：</p>
+<pre><code>mp3
+</code></pre>
+<p>這種寫法稱為 Option 的鏈式處理。</p>
+<h4><strong>開啟檔案與 BufReader</strong></h4>
+<pre><code>let open_reader = || -&gt; anyhow::Result&lt;BufReader&lt;File&gt;&gt; {
+    let file = File::open(path)?;
+    Ok(BufReader::with_capacity(256 * 1024, file))
+};
+</code></pre>
+<p>這裡又使用閉包。</p>
+<p>為什麼不直接寫：</p>
+<pre><code>let file = File::open(path)?;
+</code></pre>
+<p>因為程式可能需要重新開啟同一個音檔。</p>
+<p>例如，先用 FLAC 專用解碼器，失敗時再使用自動偵測解碼器。</p>
+<p>所以把「開啟檔案」包裝成一個可以重複呼叫的閉包。</p>
+<p><code>BufReader</code> 則提供緩衝讀取功能。</p>
+<pre><code>256 * 1024
+</code></pre>
+<p>代表 256 KiB 的緩衝區。</p>
+<p>這對大型 FLAC 音檔有助於減少頻繁的小型檔案讀取。</p>
+<h4><strong>6.3 </strong><code>match ext.as_deref()</code></h4>
+<pre><code>match ext.as_deref() {
+    Some("flac") =&gt; {
+        // ...
+    }
+    Some("mp3") =&gt; {
+        // ...
+    }
+    _ =&gt; {
+        // ...
+    }
+}
+</code></pre>
+<p>這裡值得學習的是：</p>
+<pre><code>as_deref()
+</code></pre>
+<p>假設：</p>
+<pre><code>ext: Option&lt;String&gt;
+</code></pre>
+<p>呼叫：</p>
+<pre><code>ext.as_deref()
+</code></pre>
+<p>會得到：</p>
+<pre><code>Option&lt;&amp;str&gt;
+</code></pre>
+<p>因此可以直接比較：</p>
+<pre><code>Some("flac")
+</code></pre>
+<p>不必建立新的字串。</p>
+<h4><strong>6.4 解碼失敗後的備援機制</strong></h4>
+<pre><code>match Decoder::new_flac(open_reader()?) {
+    Ok(d) =&gt; Ok(d),
+    Err(e1) =&gt; Decoder::new(open_reader()?)
+        .map_err(|e2| {
+            anyhow::anyhow!(
+                "FLAC 解碼失敗: {e1}；自動偵測亦失敗: {e2}"
+            )
+        }),
+}
+</code></pre>
+<p>這裡有三種重要語法：</p>
+<ul>
+<li><code>match</code>：判斷解碼是否成功。</li>
+<li><code>map_err()</code>：轉換錯誤型別或錯誤訊息。</li>
+<li><code>anyhow!()</code>：建立一個錯誤物件。</li>
+</ul>
+<p>設計流程：</p>
+<p><strong>FLAC 音訊檔案</strong></p>
+<p>專用 FLAC 解碼器</p>
+<p>成功</p>
+<p>使用解碼器</p>
+<p>失敗</p>
+<p>重新開檔，自動偵測</p>
+<p>回傳 Decoder 或完整錯誤訊息</p>
+<p>這種設計比只嘗試一種解碼器更有彈性。</p>
+<h4><strong>6.5 open_stream_decoder()</strong></h4>
+<pre><code>fn open_stream_decoder(
+    path: &amp;Path,
+    seek_to: Duration
+) -&gt; anyhow::Result&lt;StreamingDecoder&gt;
+</code></pre>
+<p>這個函式除了開啟解碼器，還負責處理播放定位。</p>
+<p>最重要的程式：</p>
+<pre><code>match decoder.try_seek(seek_to) {
+    Ok(()) =&gt; {
+        let source = decoder.convert_samples::&lt;f32&gt;();
+        return Ok(Box::new(source));
+    }
+    Err(_) =&gt; {
+        decoder = open_audio_decoder(path)?;
+        let source = decoder.convert_samples::&lt;f32&gt;()
+            .skip_duration(seek_to);
+
+        return Ok(Box::new(source));
+    }
+}
+</code></pre>
+<p>這裡使用兩種不同的定位方式：</p>
+<ol>
+<li><code>try_seek()</code>：嘗試直接跳轉。</li>
+<li><code>skip_duration()</code>：重新解碼並略過指定時間。</li>
+</ol>
+<p>第一種通常比較有效率。</p>
+<p>第二種則是備援，但對長音檔可能相當慢。</p>
+<p>另外：</p>
+<pre><code>convert_samples::&lt;f32&gt;()
+</code></pre>
+<p>表示將解碼後的音訊樣本轉換為 <code>f32</code> 格式。</p>
+<p>這讓後面的 EQ 可以統一處理浮點音訊。</p>
+<p>Pasted text(5).txt</p>
+<h4><strong>七、GatedSource：整份程式最重要的設計</strong></h4>
+<p>原始程式第 312–425 行。</p>
+<p>如果要真正理解這個播放器如何達成多裝置同步、即時 EQ 及同步跳轉，就必須理解 <code>GatedSource</code>。</p>
+<h4><strong>7.1 先看它的結構</strong></h4>
+<pre><code>struct GatedSource {
+    path: Arc&lt;PathBuf&gt;,
+    inner: StreamingDecoder,
+
+    start_gate: Arc&lt;AtomicBool&gt;,
+
+    seek_target: Arc&lt;AtomicUsize&gt;,
+    seek_generation: Arc&lt;AtomicU64&gt;,
+
+    seen_seek_generation: u64,
+
+    eq_gains: Arc&lt;[AtomicU32; EQ_BANDS]&gt;,
+    last_gains: [f32; EQ_BANDS],
+
+    filters: Vec&lt;Vec&lt;Biquad&gt;&gt;,
+
+    channels: u16,
+    sample_rate: u32,
+    duration: Option&lt;Duration&gt;,
+
+    cursor: usize,
+    failed: bool,
+}
+</code></pre>
+<p>這個結構體包含整個音訊串流的運作狀態。</p>
+<p>可以分成五組：</p>
+<table>
+<thead>
+<tr>
+<th>分類</th>
+<th>欄位</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>音訊來源</td>
+<td>path、inner</td>
+<td>檔案路徑與解碼器</td>
+</tr>
+<tr>
+<td>同步播放</td>
+<td>start_gate</td>
+<td>播放啟動閘門</td>
+</tr>
+<tr>
+<td>跳轉控制</td>
+<td>seek_target、seek_generation</td>
+<td>同步定位</td>
+</tr>
+<tr>
+<td>EQ 控制</td>
+<td>eq_gains、last_gains、filters</td>
+<td>即時等化</td>
+</tr>
+<tr>
+<td>播放狀態</td>
+<td>channels、sample_rate、cursor、failed</td>
+<td>音訊資訊與錯誤狀態</td>
+</tr>
+</tbody>
+</table>
+<h4><strong>7.2 Arc 是什麼？</strong></h4>
+<p>這是 Rust 中非常重要的智慧指標。</p>
+<pre><code>Arc&lt;PathBuf&gt;
+</code></pre>
+<p><code>Arc</code> 全名是：</p>
+<p><code>Atomically Reference Counted</code></p>
+<p>意思是原子參照計數。</p>
+<p>假設同一個音檔要傳給三個輸出裝置：</p>
+<pre><code>                    PathBuf
+                       |
+                      Arc
+                 _____|_____
+                |     |     |
+              裝置A  裝置B  裝置C
+</code></pre>
+<p>三個裝置可以共享同一個路徑資料。</p>
+<p>不用複製三份 <code>PathBuf</code> 的內部字串資料。</p>
+<h4><strong>Arc 和 Rc 的差別</strong></h4>
+<table>
+<thead>
+<tr>
+<th>型別</th>
+<th>使用情境</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Rc&lt;T&gt;</code></td>
+<td>單執行緒共享</td>
+</tr>
+<tr>
+<td><code>Arc&lt;T&gt;</code></td>
+<td>多執行緒共享</td>
+</tr>
+</tbody>
+</table>
+<p>因為音訊輸出可能由不同執行緒處理，因此本程式使用 <code>Arc</code>。</p>
+<h4><strong>7.3 AtomicBool：播放啟動閘門</strong></h4>
+<pre><code>start_gate: Arc&lt;AtomicBool&gt;
+</code></pre>
+<p>這是非常巧妙的設計。</p>
+<p>假設使用者同時選擇三個音訊輸出裝置。</p>
+<p>如果每個裝置建立完成後就立即開始播放，可能會出現：</p>
+<pre><code>裝置 A：先播放
+裝置 B：晚 20 ms 播放
+裝置 C：晚 50 ms 播放
+</code></pre>
+<p>本程式的設計是：</p>
+<p>先讓所有裝置建立 Sink，然後才一起開啟播放閘門。</p>
+<p>在每個 <code>GatedSource</code> 中：</p>
+<pre><code>if !self.start_gate.load(Ordering::Acquire) {
+    return Some(0.0);
+}
+</code></pre>
+<p>意思是：</p>
+<p>如果閘門尚未打開，就持續輸出數值為 0 的音訊樣本。</p>
+<p>因此 Sink 可以先建立、預熱，而不會提前消耗真正的音訊內容。</p>
+<p>所有裝置準備完成後：</p>
+<pre><code>self.start_gate.store(true, Ordering::Release);
+</code></pre>
+<p>這就是共同啟動閘門。</p>
+<p>注意：這種方式可以減少各裝置啟動時的時間差，但不代表硬體層級的絕對同步。不同音訊裝置有各自的時鐘與緩衝區，長時間播放仍可能產生時鐘漂移。</p>
+<h4><strong>7.4 Ordering：原子操作的記憶體順序</strong></h4>
+<p>程式中有：</p>
+<pre><code>Ordering::Relaxed
+Ordering::Acquire
+Ordering::Release
+Ordering::AcqRel
+</code></pre>
+<p>這些不是音訊功能，而是多執行緒記憶體同步機制。</p>
+<table>
+<thead>
+<tr>
+<th>Ordering</th>
+<th>意義</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Relaxed</td>
+<td>只保證原子性，不建立跨變數同步順序</td>
+</tr>
+<tr>
+<td>Acquire</td>
+<td>確保後續讀取不越過這個讀取操作</td>
+</tr>
+<tr>
+<td>Release</td>
+<td>確保先前操作不越過這個寫入操作</td>
+</tr>
+<tr>
+<td>AcqRel</td>
+<td>同時具有 Acquire 和 Release 特性</td>
+</tr>
+</tbody>
+</table>
+<p>例如：</p>
+<pre><code>self.start_gate.store(true, Ordering::Release);
+</code></pre>
+<p>以及：</p>
+<pre><code>self.start_gate.load(Ordering::Acquire);
+</code></pre>
+<p>配對使用可以建立跨執行緒的同步關係。</p>
+<p>這樣音訊執行緒在看到啟動閘門打開時，也能看到啟動前已經發布的相關狀態。</p>
+<h4><strong>7.5 AtomicUsize 和 AtomicU64：播放定位</strong></h4>
+<pre><code>seek_target: Arc&lt;AtomicUsize&gt;,
+seek_generation: Arc&lt;AtomicU64&gt;,
+</code></pre>
+<p>這裡使用兩個變數，而不是只用一個。</p>
+<p>用途不同：</p>
+<ul>
+<li><code>seek_target</code>：要跳轉到哪個音訊樣本位置。</li>
+<li><code>seek_generation</code>：是否出現新的跳轉命令。</li>
+</ul>
+<p>例如：</p>
+<pre><code>目前 generation = 5
+使用者拖曳進度條
+target = 4410000
+generation = 6
+</code></pre>
+<p>音訊執行緒看到 generation 從 5 變成 6，就知道需要執行新的定位。</p>
+<p>這稱為 Generation Counter（世代計數器）。</p>
+<p>比起持續輪詢整個 GUI 的狀態，這種方式更簡潔。</p>
+<h4><strong>7.6 AtomicU32 如何儲存 f32？</strong></h4>
+<p>這是另一個值得學習的 Rust 技巧。</p>
+<pre><code>eq_gains: Arc&lt;[AtomicU32; EQ_BANDS]&gt;
+</code></pre>
+<p>為什麼不用：</p>
+<pre><code>Arc&lt;[AtomicF32; EQ_BANDS]&gt;
+</code></pre>
+<p>因為標準 Rust 沒有提供通用的 <code>AtomicF32</code>。</p>
+<p>因此程式使用：</p>
+<pre><code>gain.to_bits()
+</code></pre>
+<p>把 <code>f32</code> 的位元表示轉換成 <code>u32</code>。</p>
+<p>讀取時：</p>
+<pre><code>f32::from_bits(...)
+</code></pre>
+<p>再轉換回浮點數。</p>
+<p>例如：</p>
+<pre><code>let value = 6.0_f32;
+
+let bits = value.to_bits();
+
+let restored = f32::from_bits(bits);
+</code></pre>
+<p><code>restored</code> 仍然是 <code>6.0</code>。</p>
+<p>這種方式不會把浮點數轉換成整數數值，而是保留其位元表示。</p>
+<h4><strong>7.7 </strong><code>Vec&lt;Vec&lt;Biquad&gt;&gt;</code><strong> 的意義</strong></h4>
+<pre><code>filters: Vec&lt;Vec&lt;Biquad&gt;&gt;,
+</code></pre>
+<p>這是二維動態陣列。</p>
+<p>其結構為：</p>
+<pre><code>filters
+  |
+  +-- Channel 0
+  |     +-- EQ 0
+  |     +-- EQ 1
+  |     +-- ...
+  |     +-- EQ 9
+  |
+  +-- Channel 1
+        +-- EQ 0
+        +-- EQ 1
+        +-- ...
+        +-- EQ 9
+</code></pre>
+<p>例如立體聲：</p>
+<pre><code>左聲道：10 個 Biquad
+右聲道：10 個 Biquad
+</code></pre>
+<p>因此：</p>
+<pre><code>vec![vec![Biquad::default(); EQ_BANDS]; channel_count]
+</code></pre>
+<p>就是建立每個聲道的 10 個獨立濾波器。</p>
+<p>這非常重要。</p>
+<p>如果左右聲道共用同一個濾波器狀態，左聲道的歷史樣本可能影響右聲道的濾波結果，造成錯誤。</p>
+<h4><strong>7.8 </strong><code>new()</code><strong>：建立 GatedSource</strong></h4>
+<pre><code>fn new(
+    path: Arc&lt;PathBuf&gt;,
+    channels: u16,
+    sample_rate: u32,
+    duration: Option&lt;Duration&gt;,
+    start_gate: Arc&lt;AtomicBool&gt;,
+    seek_target: Arc&lt;AtomicUsize&gt;,
+    seek_generation: Arc&lt;AtomicU64&gt;,
+    eq_gains: Arc&lt;[AtomicU32; EQ_BANDS]&gt;,
+) -&gt; anyhow::Result&lt;Self&gt;
+</code></pre>
+<p>這裡使用：</p>
+<pre><code>-&gt; anyhow::Result&lt;Self&gt;
+</code></pre>
+<p><code>Self</code> 代表目前的結構體，也就是 <code>GatedSource</code>。</p>
+<p>因此這個函式是建構函式，成功時回傳完整的 <code>GatedSource</code>。</p>
+<h4><code>Self { ... }</code><strong> 的寫法</strong></h4>
+<pre><code>let mut source = Self {
+    path,
+    inner,
+    start_gate,
+    seek_target,
+    seek_generation,
+    seen_seek_generation,
+    eq_gains,
+    last_gains: [f32::NAN; EQ_BANDS],
+    filters: vec![
+        vec![Biquad::default(); EQ_BANDS];
+        channel_count
+    ],
+    channels: channels.max(1),
+    sample_rate,
+    duration,
+    cursor: 0,
+    failed: false,
+};
+</code></pre>
+<p>這裡有兩個重要語法：</p>
+<p><strong>欄位簡寫</strong></p>
+<pre><code>path,
+</code></pre>
+<p>等同於：</p>
+<pre><code>path: path,
+</code></pre>
+<p>前提是欄位名稱和變數名稱相同。</p>
+<p><strong>陣列初始化</strong></p>
+<pre><code>[f32::NAN; EQ_BANDS]
+</code></pre>
+<p>表示建立十個 <code>NaN</code>。</p>
+<p>為什麼使用 NaN？</p>
+<p>因為第一次更新 EQ 時：</p>
+<pre><code>if (gain - self.last_gains[band]).abs() &gt; 0.001
+    || !self.last_gains[band].is_finite()
+</code></pre>
+<p><code>NaN</code> 不是有限數值，因此：</p>
+<pre><code>!self.last_gains[band].is_finite()
+</code></pre>
+<p>第一次必定成立，確保所有濾波器都會初始化。</p>
+<h4><strong>7.9 refresh_eq()：更新 EQ</strong></h4>
+<pre><code>fn refresh_eq(&amp;mut self) {
+    for band in 0..EQ_BANDS {
+        let gain = f32::from_bits(
+            self.eq_gains[band].load(Ordering::Relaxed)
+        );
+
+        if (gain - self.last_gains[band]).abs() &gt; 0.001
+            || !self.last_gains[band].is_finite()
+        {
+            for channel_filters in &amp;mut self.filters {
+                channel_filters[band].set_peaking(
+                    self.sample_rate as f32,
+                    EQ_FREQUENCIES[band],
+                    1.0,
+                    gain,
+                );
+            }
+
+            self.last_gains[band] = gain;
+        }
+    }
+}
+</code></pre>
+<p>這段最重要的觀念是：</p>
+<p><strong>GUI 修改 EQ 時，不直接操作音訊執行緒中的濾波器，而是更新共享參數。</strong></p>
+<p>音訊執行緒自行讀取參數，並更新本地濾波器。</p>
+<p>這是一種 Producer / Consumer 設計：</p>
+<ul>
+<li>Producer：GUI，產生新的 EQ 參數。</li>
+<li>Consumer：音訊來源，讀取 EQ 參數並處理音訊。</li>
+</ul>
+<p>而且只有增益真正改變時，才重新計算係數。</p>
+<p>這樣能減少不必要的運算。</p>
+<h4><strong>7.10 apply_pending_seek()：同步跳轉</strong></h4>
+<pre><code>fn apply_pending_seek(&amp;mut self) {
+    let generation =
+        self.seek_generation.load(Ordering::Acquire);
+
+    if generation == self.seen_seek_generation {
+        return;
+    }
+</code></pre>
+<p>這裡比較目前的 generation 和上次處理的 generation。</p>
+<p>如果相同，表示沒有新命令。</p>
+<p>如果不同，就讀取：</p>
+<pre><code>let sample_index =
+    self.seek_target.load(Ordering::Acquire);
+</code></pre>
+<p>接著將樣本位置轉換成秒數：</p>
+<pre><code>let seconds = sample_index as f64
+    / self.sample_rate.max(1) as f64
+    / self.channels.max(1) as f64;
+</code></pre>
+<p>這裡必須理解音訊樣本的排列方式。</p>
+<p>假設：</p>
+<ul>
+<li>取樣率：44100 Hz。</li>
+<li>聲道數：2。</li>
+<li>目標樣本索引：441000。</li>
+</ul>
+<p>那麼：</p>
+<p>\[ t=\frac{441000}{44100\times2}=5 \]</p>
+<p>即定位到約 5 秒。</p>
+<p>為什麼除以聲道數？</p>
+<p>因為程式使用的是交錯排列的音訊樣本：</p>
+<pre><code>左1、右1、左2、右2、左3、右3……
+</code></pre>
+<p>因此每秒總樣本數是：</p>
+<p>\[ 44100\times2=88200 \]</p>
+<p>接下來：</p>
+<pre><code>match open_stream_decoder(self.path.as_path(), target) {
+    Ok(decoder) =&gt; {
+        self.inner = decoder;
+        self.cursor = sample_index;
+        // ...
+    }
+    Err(error) =&gt; {
+        eprintln!("音訊跳轉失敗：{error}");
+        self.failed = true;
+    }
+}
+</code></pre>
+<p>成功時：</p>
+<ol>
+<li>更換解碼器。</li>
+<li>更新游標。</li>
+<li>重設各濾波器的歷史狀態。</li>
+<li>清除錯誤旗標。</li>
+</ol>
+<p>為什麼重設 <code>z1</code> 和 <code>z2</code>？</p>
+<p>因為跳轉後的音訊已經不是原本連續的時間序列。</p>
+<p>若沿用跳轉前的濾波器狀態，可能產生不正確的瞬態響應。</p>
+<h4><strong>7.11 Iterator Trait：讓音訊來源逐個輸出樣本</strong></h4>
+<p>這是整份程式另一個非常重要的 Rust 語法。</p>
+<pre><code>impl Iterator for GatedSource {
+    type Item = f32;
+
+    fn next(&amp;mut self) -&gt; Option&lt;Self::Item&gt; {
+</code></pre>
+<p>表示：</p>
+<p>為 <code>GatedSource</code> 實作 Iterator Trait。</p>
+<p><code>type Item = f32</code> 表示每次迭代產生一個 <code>f32</code>。</p>
+<p><code>next()</code> 的回傳值：</p>
+<pre><code>Option&lt;f32&gt;
+</code></pre>
+<p>有兩種可能：</p>
+<ul>
+<li><code>Some(sample)</code>：還有音訊樣本。</li>
+<li><code>None</code>：音訊串流結束。</li>
+</ul>
+<h4><strong>真正的音訊處理流程</strong></h4>
+<pre><code>let channel = self.cursor % self.channels as usize;
+
+if channel == 0 {
+    self.refresh_eq();
+}
+
+let mut sample = self.inner.next()?;
+
+for filter in &amp;mut self.filters[channel] {
+    sample = filter.process(sample);
+}
+
+self.cursor = self.cursor.saturating_add(1);
+
+Some(sample)
+</code></pre>
+<p>逐步理解：</p>
+<ol>
+<li>根據 cursor 判斷目前樣本屬於哪個聲道。</li>
+<li>每次開始新的聲道組合時，檢查 EQ 是否更新。</li>
+<li>從解碼器取得下一個音訊樣本。</li>
+<li>依序通過該聲道的十個 Biquad。</li>
+<li>增加樣本索引。</li>
+<li>回傳處理後的樣本。</li>
+</ol>
+<p>例如立體聲：</p>
+<pre><code>樣本 0 → 左聲道 → EQ 0~9
+樣本 1 → 右聲道 → EQ 0~9
+樣本 2 → 左聲道 → EQ 0~9
+樣本 3 → 右聲道 → EQ 0~9
+</code></pre>
+<h4><code>?</code><strong> 在 Iterator 中的意義</strong></h4>
+<pre><code>let mut sample = self.inner.next()?;
+</code></pre>
+<p>如果解碼器回傳：</p>
+<pre><code>Some(value)
+</code></pre>
+<p>就取得 value。</p>
+<p>如果解碼器回傳：</p>
+<pre><code>None
+</code></pre>
+<p>則目前的 <code>next()</code> 也立即回傳 <code>None</code>。</p>
+<p>因此整個音訊來源自然結束。</p>
+<h4><code>saturating_add()</code></h4>
+<pre><code>self.cursor = self.cursor.saturating_add(1);
+</code></pre>
+<p>這是防止整數溢位的寫法。</p>
+<p>一般的：</p>
+<pre><code>self.cursor += 1;
+</code></pre>
+<p>在極端情況下可能發生整數溢位。</p>
+<p><code>saturating_add()</code> 在超過型別上限時會停留在最大值。</p>
+<p>對於長時間運作的音訊串流，這是較謹慎的寫法。</p>
+<h4><strong>7.12 為什麼還要實作 Source Trait？</strong></h4>
+<pre><code>impl Source for GatedSource {
+    fn current_frame_len(&amp;self) -&gt; Option&lt;usize&gt; {
+        None
+    }
+
+    fn channels(&amp;self) -&gt; u16 {
+        self.channels
+    }
+
+    fn sample_rate(&amp;self) -&gt; u32 {
+        self.sample_rate
+    }
+
+    fn total_duration(&amp;self) -&gt; Option&lt;Duration&gt; {
+        self.duration
+    }
+}
+</code></pre>
+<p><code>Iterator</code> 只告訴 rodio：</p>
+<p>如何逐個取得音訊樣本。</p>
+<p><code>Source</code> 則額外提供音訊格式資訊：</p>
+<ul>
+<li>聲道數。</li>
+<li>取樣率。</li>
+<li>播放時間。</li>
+<li>目前音框長度。</li>
+</ul>
+<p>因此 <code>GatedSource</code> 就能被當作 rodio 的一般音訊來源使用。</p>
+<p>Pasted text(5).txt</p>
+<h4><strong>八、App：整個 GUI 的狀態管理</strong></h4>
+<p>原始程式第 427–530 行。</p>
+<p>這裡開始進入 GUI 與音訊引擎之間的整合。</p>
+<h4><strong>8.1 App 結構體</strong></h4>
+<pre><code>struct App {
+    selected_file: Option&lt;PathBuf&gt;,
+    devices: Vec&lt;String&gt;,
+    selected: Vec&lt;bool&gt;,
+    device_volumes: Vec&lt;f32&gt;,
+
+    is_playing: bool,
+    status: String,
+    volume: f32,
+
+    playing: Vec&lt;PlayingDevice&gt;,
+
+    sample_rate: u32,
+    channels: u16,
+    duration: Duration,
+    position_offset: Duration,
+    playback_started: Option&lt;Instant&gt;,
+
+    start_gate: Arc&lt;AtomicBool&gt;,
+    seek_target: Arc&lt;AtomicUsize&gt;,
+    seek_generation: Arc&lt;AtomicU64&gt;,
+    eq_shared: Arc&lt;[AtomicU32; EQ_BANDS]&gt;,
+
+    eq_gains: [f32; EQ_BANDS],
+    theme_index: usize,
+}
+</code></pre>
+<p>這個結構體是整個應用程式的中心。</p>
+<p>它負責儲存：</p>
+<ol>
+<li>使用者選擇的音樂。</li>
+<li>可用音訊裝置。</li>
+<li>各裝置的選取狀態。</li>
+<li>各裝置的音量。</li>
+<li>播放狀態。</li>
+<li>播放進度。</li>
+<li>EQ 參數。</li>
+<li>GUI 主題。</li>
+<li>與音訊執行緒共享的控制資訊。</li>
+</ol>
+<h4><strong>為什麼 selected 和 devices 分開？</strong></h4>
+<pre><code>devices: Vec&lt;String&gt;,
+selected: Vec&lt;bool&gt;,
+</code></pre>
+<p>假設：</p>
+<pre><code>devices = [
+    "Speakers",
+    "Bluetooth Headphones",
+    "HDMI Audio"
+];
+</code></pre>
+<p>而：</p>
+<pre><code>selected = [
+    true,
+    false,
+    true
+];
+</code></pre>
+<p>代表：</p>
+<table>
+<thead>
+<tr>
+<th>裝置</th>
+<th>是否選取</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Speakers</td>
+<td>是</td>
+</tr>
+<tr>
+<td>Bluetooth Headphones</td>
+<td>否</td>
+</tr>
+<tr>
+<td>HDMI Audio</td>
+<td>是</td>
+</tr>
+</tbody>
+</table>
+<p>這是使用平行陣列的設計。</p>
+<p>兩個陣列的索引必須保持一致。</p>
+<p>優點是容易操作，缺點是資料同步需要特別小心。</p>
+<h4><strong>8.2 Option 型別</strong></h4>
+<pre><code>selected_file: Option&lt;PathBuf&gt;
+</code></pre>
+<p>代表目前可能有音樂檔案，也可能沒有。</p>
+<pre><code>None
+</code></pre>
+<p>代表尚未選擇。</p>
+<pre><code>Some(path)
+</code></pre>
+<p>代表已選擇檔案。</p>
+<p>這比使用空字串或特殊路徑來表示「沒有檔案」更安全。</p>
+<h4><strong>8.3 Duration 與 Instant</strong></h4>
+<pre><code>duration: Duration,
+position_offset: Duration,
+playback_started: Option&lt;Instant&gt;,
+</code></pre>
+<p>這三個型別很重要。</p>
+<table>
+<thead>
+<tr>
+<th>型別</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Duration</td>
+<td>表示時間長度</td>
+</tr>
+<tr>
+<td>Instant</td>
+<td>表示單調遞增的時間點</td>
+</tr>
+</tbody>
+</table>
+<p>| Option</p>
 <h1>定時澆水</h1>
 
 
