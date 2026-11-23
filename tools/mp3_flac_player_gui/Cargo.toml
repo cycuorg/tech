@@ -1,14 +1,15 @@
 [package]
 name = "mp3_player_gui"
-version = "0.1.0"
+version = "0.1.2"
 edition = "2021"
-description = "圖形介面 MP3 播放器，支援同時輸出到多個已配對的藍牙裝置"
+description = "圖形介面音訊播放器，支援 MP3 / FLAC，可同時輸出到多個已配對的藍牙裝置"
 authors = ["mp3_player_gui"]
 
 [dependencies]
 eframe = "0.29"
 egui = "0.29"
-rodio = { version = "0.19", features = ["symphonia-mp3"] }
+# default 含 claxon(FLAC)；再加 symphonia 提升 MP3/FLAC 相容性
+rodio = { version = "0.19", features = ["symphonia-mp3", "symphonia-flac"] }
 cpal = "0.15"
 rfd = "0.15"
 anyhow = "1"

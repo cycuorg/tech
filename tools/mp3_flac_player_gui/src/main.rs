@@ -251,15 +251,61 @@ impl Biquad {
     }
 }
 
-/// 每個輸出裝置各自持有一個串流解碼器，不再把整首 MP3 解碼成 Vec<f32>。
+/// 每個輸出裝置各自持有一個串流解碼器，不再把整首音檔解碼成 Vec<f32>。
 /// 所有裝置共用啟動閘門、跳轉命令與 EQ 參數；濾波器狀態則各自獨立。
 type StreamingDecoder = Box<dyn Source<Item = f32> + Send>;
 
+fn open_audio_decoder(path: &Path) -> anyhow::Result<Decoder<BufReader<File>>> {
+    let ext = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|s| s.to_ascii_lowercase());
+    // 較大緩衝，利於整片 CD 轉成的大型 FLAC
+    let open_reader = || -> anyhow::Result<BufReader<File>> {
+        let file = File::open(path)?;
+        Ok(BufReader::with_capacity(256 * 1024, file))
+    };
+
+    match ext.as_deref() {
+        Some("flac") => {
+            // 先試 FLAC 專用，失敗再自動偵測（相容不同後端）
+            match Decoder::new_flac(open_reader()?) {
+                Ok(d) => Ok(d),
+                Err(e1) => Decoder::new(open_reader()?)
+                    .map_err(|e2| anyhow::anyhow!("FLAC 解碼失敗: {e1}；自動偵測亦失敗: {e2}")),
+            }
+        }
+        Some("mp3") => {
+            match Decoder::new_mp3(open_reader()?) {
+                Ok(d) => Ok(d),
+                Err(e1) => Decoder::new(open_reader()?)
+                    .map_err(|e2| anyhow::anyhow!("MP3 解碼失敗: {e1}；自動偵測亦失敗: {e2}")),
+            }
+        }
+        _ => Decoder::new(open_reader()?).map_err(|e| anyhow::anyhow!("音訊解碼失敗: {e}")),
+    }
+}
+
 fn open_stream_decoder(path: &Path, seek_to: Duration) -> anyhow::Result<StreamingDecoder> {
-    let file = File::open(path)?;
-    let decoder = Decoder::new(BufReader::new(file))?;
-    let source = decoder.convert_samples().skip_duration(seek_to);
-    Ok(Box::new(source))
+    let mut decoder = open_audio_decoder(path)?;
+
+    // 優先 try_seek（FLAC/Symphonia 可快速定位）；失敗才用 skip_duration（會解碼略過，長檔很慢）
+    if !seek_to.is_zero() {
+        match decoder.try_seek(seek_to) {
+            Ok(()) => {
+                let source = decoder.convert_samples::<f32>();
+                return Ok(Box::new(source));
+            }
+            Err(_) => {
+                // 後備：重新開檔並 skip（僅短距離可接受）
+                decoder = open_audio_decoder(path)?;
+                let source = decoder.convert_samples::<f32>().skip_duration(seek_to);
+                return Ok(Box::new(source));
+            }
+        }
+    }
+
+    Ok(Box::new(decoder.convert_samples::<f32>()))
 }
 
 struct GatedSource {
@@ -404,7 +450,7 @@ impl Default for App {
         let devices = list_devices();
         let selected = vec![false; devices.len()];
         let (volume, volume_status) = match get_windows_endpoint_volume() {
-            Ok(value) => (value, "請選擇 MP3 檔案，並勾選要輸出的裝置".to_string()),
+            Ok(value) => (value, "請選擇 MP3 或 FLAC 檔案，並勾選要輸出的裝置".to_string()),
             Err(error) => (0.85, format!("無法讀取 Windows 預設輸出音量（使用 85% 作為初始值）：{error}")),
         };
         Self {
@@ -438,9 +484,14 @@ fn find_device_by_name(name: &str) -> Option<cpal::Device> {
 
 fn inspect_audio(path: &Path) -> anyhow::Result<(Option<Duration>, u32, u16)> {
     // 僅讀取解碼器資訊，不收集整首音訊樣本，因此選曲後不必等待完整解碼。
-    let file = File::open(path)?;
-    let decoder = Decoder::new(BufReader::new(file))?;
-    Ok((decoder.total_duration(), decoder.sample_rate(), decoder.channels()))
+    let decoder = open_audio_decoder(path)?;
+    let sample_rate = decoder.sample_rate();
+    let channels = decoder.channels();
+    let duration = decoder.total_duration();
+    if sample_rate == 0 || channels == 0 {
+        return Err(anyhow::anyhow!("音檔參數異常（sample_rate={sample_rate}, channels={channels}）"));
+    }
+    Ok((duration, sample_rate, channels))
 }
 
 fn format_time(time: Duration) -> String {
@@ -512,10 +563,10 @@ impl App {
             .collect();
         if selected_devices.is_empty() { self.status = "請至少選擇一個輸出裝置".to_string(); return; }
 
-        self.status = "正在開啟 MP3 串流…".to_string();
+        self.status = "正在開啟音訊串流…".to_string();
         let (duration, sample_rate, channels) = match inspect_audio(&path) {
             Ok(v) => v,
-            Err(e) => { self.status = format!("無法讀取 MP3：{}", e); return; }
+            Err(e) => { self.status = format!("無法讀取音檔：{}", e); return; }
         };
         if sample_rate == 0 || channels == 0 {
             self.status = "音訊格式無效".to_string();
@@ -620,7 +671,7 @@ impl eframe::App for App {
                             ui.label(RichText::new("♫").size(32.0).color(palette.accent));
                             ui.vertical(|ui| {
                                 ui.label(RichText::new("AUDIO PLAYER").size(10.0).strong().color(palette.accent));
-                                ui.label(RichText::new("MP3 多裝置播放器").size(23.0).strong().color(palette.text));
+                                ui.label(RichText::new("MP3 / FLAC 多裝置播放器").size(23.0).strong().color(palette.text));
                                 ui.label(RichText::new("同步輸出 · 精準定位 · 10 段圖形等化器").size(12.0).color(palette.secondary));
                             });
                             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
@@ -651,10 +702,13 @@ impl eframe::App for App {
                                 ui.horizontal(|ui| {
                                     ui.label(RichText::new("01  音樂來源").size(14.0).strong().color(palette.text));
                                     ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                                        if ui.add(egui::Button::new(RichText::new("選擇 MP3…").strong())
+                                        if ui.add(egui::Button::new(RichText::new("選擇音檔…").strong())
                                             .fill(palette.accent_active)
                                             .rounding(egui::Rounding::same(6.0))).clicked() {
-                                            if let Some(path) = rfd::FileDialog::new().add_filter("MP3 音訊", &["mp3"]).pick_file() {
+                                            if let Some(path) = rfd::FileDialog::new().add_filter("音訊檔案", &["mp3", "flac"])
+                                                .add_filter("MP3", &["mp3"])
+                                                .add_filter("FLAC", &["flac"])
+                                                .pick_file() {
                                                 self.stop_playback();
                                                 self.selected_file = Some(path.clone());
                                                 self.duration = Duration::ZERO;
@@ -902,10 +956,10 @@ fn main() -> eframe::Result<()> {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([980.0, 820.0])
             .with_min_inner_size([560.0, 520.0])
-            .with_title("MP3 多裝置播放器"),
+            .with_title("MP3 / FLAC 多裝置播放器"),
         ..Default::default()
     };
-    eframe::run_native("MP3 多裝置播放器", options, Box::new(|cc| {
+    eframe::run_native("MP3 / FLAC 多裝置播放器", options, Box::new(|cc| {
         setup_chinese_fonts(&cc.egui_ctx);
         apply_theme(&cc.egui_ctx, 0);
         Ok(Box::new(App::default()))
